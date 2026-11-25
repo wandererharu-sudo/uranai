@@ -621,6 +621,17 @@
           <input type="text" id="modelInput" autocomplete="off" spellcheck="false">
         </label>
         <p class="hint">通常は、このままで大丈夫です。うまくいかないときだけ変えてください。空にして保存すると、最初の名前に戻ります。</p>
+        <label class="field" for="modelSelect">一覧から選ぶ
+          <select id="modelSelect" style="width: 100%; font-size: 16px; padding: 0.5rem;">
+            <option value="">（選ぶと上の欄に入ります）</option>
+            <option value="gemini-2.5-flash">gemini-2.5-flash（ふつう・速い）</option>
+            <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite（軽い・混みにくい）</option>
+            <option value="gemini-2.5-pro">gemini-2.5-pro（くわしい・遅い）</option>
+            <option value="gemini-flash-latest">gemini-flash-latest（最新のflash）</option>
+          </select>
+        </label>
+        <p><button type="button" class="btn btn-secondary" id="listModels">このキーで使えるモデルを調べる</button></p>
+        <p class="hint">キーを入れてから押すと、Google に聞いて、いま使えるモデルを一覧に並べます。混み合って動かない時は、別のモデルを選んで「保存する」を押してください。</p>
         <p><button type="button" class="btn btn-ghost" id="resetModel">最初のモデル名に戻す</button></p>
 
         <div class="stack">
@@ -1706,6 +1717,40 @@
       saveSettings();
     });
     $("clearKey").addEventListener("click", clearKey);
+    // ===== モデルを一覧から選ぶ（2026-11-25 みこ追加） =====
+    $("modelSelect").addEventListener("change", function () {
+      var v = $("modelSelect").value;
+      if (!v) return;
+      $("modelInput").value = v;
+      setMessage("settingsStatus", v + " を選びました。「保存する」を押すと、次の鑑定から使います。", true);
+    });
+    $("listModels").addEventListener("click", async function () {
+      var key = $("apiKeyInput").value.trim() || readStoredKey();
+      if (!key) { setMessage("settingsStatus", "先にAPIキーを入れてください。"); return; }
+      setMessage("settingsStatus", "Google に聞いています…", true);
+      try {
+        var res = await fetch(API_ORIGIN.replace(/\/$/, "") + "?pageSize=200", { headers: { "x-goog-api-key": key } });
+        var data = await res.json().catch(function () { return {}; });
+        if (!res.ok) throw new Error((data.error && data.error.message) || ("HTTP " + res.status));
+        var names = (data.models || []).filter(function (m) {
+          return (m.supportedGenerationMethods || []).indexOf("generateContent") !== -1 && /^models\/gemini/.test(m.name || "");
+        }).map(function (m) { return { id: m.name.replace(/^models\//, ""), label: m.displayName || "" }; });
+        if (!names.length) throw new Error("使えるモデルが見つかりませんでした");
+        var sel = $("modelSelect");
+        sel.textContent = "";
+        var first = document.createElement("option");
+        first.value = ""; first.textContent = "（" + names.length + " 個見つかりました・選ぶと上の欄に入ります）";
+        sel.appendChild(first);
+        names.sort(function (a, b) { return a.id < b.id ? 1 : -1; }).forEach(function (n) {
+          var o = document.createElement("option");
+          o.value = n.id; o.textContent = n.id + (n.label ? "（" + n.label + "）" : "");
+          sel.appendChild(o);
+        });
+        setMessage("settingsStatus", names.length + " 個のモデルを一覧に並べました。「一覧から選ぶ」で選んでください。", true);
+      } catch (e) {
+        setMessage("settingsStatus", "調べられませんでした：" + (e && e.message ? e.message : "通信できませんでした"));
+      }
+    });
     $("resetModel").addEventListener("click", function () {
       $("modelInput").value = DEFAULT_MODEL;
       setMessage("settingsStatus", "最初のモデル名に戻しました。よければ「保存する」を押してください。");
