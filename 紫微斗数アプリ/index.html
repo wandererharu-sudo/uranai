@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>紫微斗数 命盤</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header><h1>紫微斗数 命盤</h1><p class="sub">生年月日と時刻から命盤を作ります</p></header>
+
+<main>
+<form id="form" class="card" autocomplete="off">
+  <label>お名前（任意・保存しません）
+    <input id="name" type="text" maxlength="20" placeholder="例：花子">
+  </label>
+  <div class="row">
+    <label class="era">暦
+      <select id="era">
+        <option value="0">西暦</option>
+        <option value="1911">大正</option>
+        <option value="1925" selected>昭和</option>
+        <option value="1988">平成</option>
+        <option value="2018">令和</option>
+      </select>
+    </label>
+    <label class="yr">年 <input id="year" type="number" inputmode="numeric" min="1" max="2100" value="40" required></label>
+    <label class="md">月 <select id="month"></select></label>
+    <label class="md">日 <select id="day"></select></label>
+  </div>
+  <p id="seireki" class="hint"></p>
+  <label>生まれた時刻（時辰）
+    <select id="hour">
+      <option value="">不明</option>
+      <option value="0">子の刻（0時〜1時前）</option>
+      <option value="1">丑の刻（1時〜3時前）</option>
+      <option value="2">寅の刻（3時〜5時前）</option>
+      <option value="3">卯の刻（5時〜7時前）</option>
+      <option value="4">辰の刻（7時〜9時前）</option>
+      <option value="5">巳の刻（9時〜11時前）</option>
+      <option value="6" selected>午の刻（11時〜13時前）</option>
+      <option value="7">未の刻（13時〜15時前）</option>
+      <option value="8">申の刻（15時〜17時前）</option>
+      <option value="9">酉の刻（17時〜19時前）</option>
+      <option value="10">戌の刻（19時〜21時前）</option>
+      <option value="11">亥の刻（21時〜23時前）</option>
+      <option value="late">夜の子の刻（23時〜24時・翌日として計算）</option>
+    </select>
+  </label>
+  <div class="row">
+    <label class="half">性別
+      <select id="gender"><option>男</option><option>女</option></select>
+    </label>
+    <label class="half">旧暦の基準
+      <select id="cal"><option value="jp">日本の旧暦</option><option value="cn">中国・台湾の農暦</option></select>
+    </label>
+  </div>
+  <button type="submit">命盤を出す</button>
+</form>
+
+<section id="result" hidden>
+  <div id="notice" class="notice" hidden></div>
+  <div class="pdfrow noprint">
+    <button type="button" id="pdf" class="pdfbtn">PDFで保存（印刷）</button>
+    <p class="hint center">印刷の画面が出たら、送信先で「PDFに保存」を選んでください。</p>
+  </div>
+  <section id="points" class="card reading"></section>
+  <div id="board" class="board"></div>
+  <p class="hint center noprint">マスをタップすると、くわしい説明が出ます。</p>
+  <section id="legend" class="card reading small"></section>
+  <div id="sihua" class="card small"></div>
+  <section id="money" class="card reading"></section>
+  <section id="reading" class="card reading"></section>
+  <p class="closing">紫微斗数は傾向の参考です。ご本人の意志と行動が運命を作ります。</p>
+</section>
+</main>
+
+<div id="sheet" class="sheet" hidden>
+  <div class="sheet-body" role="dialog" aria-modal="true">
+    <button id="close" class="close" aria-label="閉じる">×</button>
+    <div id="detail"></div>
+  </div>
+</div>
+
+<footer>計算はこの端末の中だけで行い、入力は送信・保存しません。</footer>
+<script src="js/astro.js"></script>
+<script src="js/lunar.js"></script>
+<script src="js/ziwei.js"></script>
+<script src="js/texts.js"></script>
+<script src="js/guide.js"></script>
+<script src="js/app.js"></script>
+<!-- 占いの入口とのつなぎ（2026-11-18 みこ追加） -->
+<script src="../hub.js"></script>
+</body>
+</html>

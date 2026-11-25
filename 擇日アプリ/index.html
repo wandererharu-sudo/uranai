@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f3ecdf">
+<title>擇日 — 宜忌で日を選ぶ</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%238f4634'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-size='16' fill='%23fbf6ee' font-family='serif'%3E吉%3C/text%3E%3C/svg%3E">
+<style>
+  :root {
+    --paper: #f3ecdf;
+    --card: #fbf7f0;
+    --ink: #241c16;
+    --muted: #655b52;
+    --line: #e3d6c6;
+    --clay: #8d4532;
+    --clay-deep: #6d3324;
+    --moss: #1d5b43;
+    --moss-ink: #143d2e;
+    --gold: #7a5a28;
+    --shadow: 0 10px 30px rgba(70, 42, 24, 0.06);
+    --sans: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic Medium", "Yu Gothic", "Noto Sans JP", Meiryo, sans-serif;
+    --serif: "Yu Mincho", "Hiragino Mincho ProN", "Noto Serif JP", "Iowan Old Style", Palatino, serif;
+  }
+  * { box-sizing: border-box; }
+  html { font-size: 18px; }
+  body {
+    margin: 0;
+    color: var(--ink);
+    background:
+      radial-gradient(1200px 500px at 10% -10%, rgba(141, 69, 50, 0.08), transparent 50%),
+      var(--paper);
+    font-family: var(--sans);
+    line-height: 1.65;
+  }
+  button, input, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  .wrap { width: min(920px, calc(100% - 28px)); margin: 0 auto; }
+  header.site { padding: 28px 0 8px; }
+  .kicker {
+    margin: 0 0 4px;
+    letter-spacing: 0.28em;
+    font-size: 0.78rem;
+    color: var(--clay);
+  }
+  h1 {
+    margin: 0;
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 2.6rem;
+    letter-spacing: 0.18em;
+    line-height: 1.1;
+  }
+  .lead { margin: 10px 0 0; color: var(--muted); font-size: 1rem; }
+  .note {
+    margin: 16px 0 0;
+    padding: 12px 14px;
+    background: rgba(255, 250, 244, 0.72);
+    border-left: 3px solid var(--clay);
+    color: var(--ink);
+    font-size: 0.95rem;
+  }
+  form.panel, .sheet, .help {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    box-shadow: var(--shadow);
+    padding: 18px 16px 20px;
+    margin: 16px 0;
+  }
+  fieldset { border: 0; margin: 0 0 18px; padding: 0; }
+  legend {
+    padding: 0;
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+    font-weight: 700;
+  }
+  .hint { margin: 0 0 10px; color: var(--muted); font-size: 0.92rem; }
+  .group-label {
+    margin: 12px 0 6px;
+    font-size: 0.82rem;
+    letter-spacing: 0.08em;
+    color: var(--gold);
+  }
+  .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .choice {
+    text-align: left;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 12px 12px 10px;
+    min-height: 64px;
+  }
+  .choice small { display: block; color: var(--muted); font-size: 0.78rem; font-weight: 400; }
+  .choice strong { font-weight: 700; font-size: 1.02rem; }
+  .choice[aria-pressed="true"] {
+    background: #f8efe8;
+    border-color: var(--clay);
+    box-shadow: inset 0 0 0 1px var(--clay);
+  }
+  .presets { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+  .presets button, .ghost, .print-btn {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 8px 14px;
+    min-height: 44px;
+  }
+  .presets button[aria-pressed="true"] {
+    background: var(--clay);
+    border-color: var(--clay);
+    color: #fffaf5;
+  }
+  .dates { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  label.field { display: flex; flex-direction: column; gap: 4px; font-size: 0.92rem; }
+  input[type="date"], select {
+    min-height: 48px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #fff;
+    padding: 8px 10px;
+  }
+  details.birth { margin-top: 4px; }
+  details.birth summary { cursor: pointer; font-weight: 700; min-height: 44px; display: flex; align-items: center; }
+  .check { display: flex; gap: 10px; align-items: flex-start; margin-top: 12px; }
+  .check input { width: 1.3rem; height: 1.3rem; margin-top: 0.25rem; }
+  .risshun-note {
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: #f8f1e4;
+    border-radius: 12px;
+    font-size: 0.92rem;
+  }
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .summary h2 { margin: 0 0 4px; font-size: 1.25rem; font-family: var(--serif); font-weight: 500; }
+  .summary p { margin: 0; color: var(--muted); }
+  .filter { display: flex; gap: 8px; flex-wrap: wrap; }
+  .filter button[aria-pressed="true"] { background: var(--moss); color: white; border-color: var(--moss); }
+  .list { display: flex; flex-direction: column; gap: 10px; }
+  .day-card {
+    width: 100%;
+    text-align: left;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 12px 14px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 10px 12px;
+    align-items: center;
+  }
+  .mark {
+    width: 48px; height: 48px;
+    border-radius: 14px;
+    display: grid; place-items: center;
+    font-family: var(--serif);
+    font-size: 1.45rem;
+  }
+  .mark.g-best { background: #d7eee3; color: var(--moss-ink); }
+  .mark.g-good { background: #e7f3ea; color: var(--moss); }
+  .mark.g-fair { background: #f6efe0; color: var(--gold); }
+  .mark.g-bad { background: #f6e6e1; color: #7a342c; }
+  .day-card .when { font-weight: 700; font-size: 1.08rem; }
+  .day-card .why { color: var(--muted); font-size: 0.92rem; }
+  .score { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 0.92rem; }
+  .empty {
+    padding: 16px;
+    background: #fff;
+    border-radius: 14px;
+    color: var(--muted);
+  }
+  .months { display: flex; flex-direction: column; gap: 18px; margin-top: 18px; }
+  .month h3 { margin: 0 0 8px; font-size: 1.05rem; font-family: var(--serif); font-weight: 500; }
+  .week, .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .week span { text-align: center; font-size: 0.78rem; color: var(--muted); }
+  .week span:first-child { color: var(--clay); }
+  .cell {
+    min-height: 68px;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    background: #fff;
+    padding: 4px 2px 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    line-height: 1.25;
+  }
+  .cell .n { font-weight: 700; font-size: 0.95rem; }
+  .cell .g { font-family: var(--serif); font-size: 0.95rem; }
+  .cell .r { font-size: 0.68rem; color: var(--muted); }
+  .cell.g-best { background: #d7eee3; }
+  .cell.g-good { background: #e7f3ea; }
+  .cell.g-fair { background: #f6efe0; }
+  .cell.g-bad { background: #f6e6e1; }
+  .cell.out { background: transparent; color: #b3a89c; border-color: transparent; }
+  .cell.today { box-shadow: inset 0 0 0 2px var(--clay); }
+  .cell:focus-visible, .choice:focus-visible, .day-card:focus-visible, .presets button:focus-visible {
+    outline: 3px solid #d7a48a;
+    outline-offset: 2px;
+  }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 8px 0 0; font-size: 0.85rem; color: var(--muted); }
+  .legend i {
+    display: inline-block; width: 0.85rem; height: 0.85rem; border-radius: 4px; margin-right: 4px; vertical-align: -1px;
+  }
+  dialog {
+    position: fixed;
+    top: 12px;
+    left: 50%;
+    right: auto;
+    bottom: auto;
+    transform: translateX(-50%);
+    width: min(560px, calc(100% - 24px));
+    max-height: calc(100vh - 24px);
+    margin: 0;
+    overflow: auto;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 0;
+    background: var(--card);
+    color: var(--ink);
+  }
+  dialog::backdrop { background: rgba(36, 28, 22, 0.35); }
+  .dialog-body { padding: 18px 16px 16px; }
+  .dialog-body h3 { margin: 0; font-family: var(--serif); font-weight: 500; font-size: 1.45rem; }
+  .pillars { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+  .pillars span, .chips span {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 0.92rem;
+  }
+  .factor { margin: 0 0 10px; }
+  .factor b { font-weight: 700; }
+  .factor .pts { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .close-btn {
+    position: sticky;
+    bottom: 0;
+    margin-top: 8px;
+    width: 100%;
+    min-height: 48px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: #fff;
+    box-shadow: 0 -10px 16px var(--card);
+  }
+  .help h2 { font-family: var(--serif); font-weight: 500; font-size: 1.2rem; margin: 0 0 8px; }
+  .help p, .help li { color: var(--muted); font-size: 0.95rem; }
+  .error { color: var(--clay-deep); }
+  footer.site { padding: 8px 0 28px; color: var(--muted); font-size: 0.85rem; }
+  #purpose-groups { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  #purpose-groups .choice { min-height: 0; padding: 8px 8px 6px; }
+  #purpose-groups .choice strong { font-size: 0.86rem; display: block; line-height: 1.35; }
+  #purpose-groups .choice small { font-size: 0.7rem; }
+  .chips span span { border: 0; padding: 0; background: none; }
+  .tags { display: flex; flex-wrap: wrap; gap: 4px 6px; margin: 4px 0 0; }
+  .tags span { font-size: 0.8rem; padding: 1px 8px; border-radius: 999px; background: #eef5ef; color: var(--moss-ink); }
+  .tags.ji span { background: #f6e6e1; color: #7a342c; }
+  .tags span.on { background: var(--moss); color: #fff; }
+  .yiji { margin: 10px 0; }
+  .yiji h4 { margin: 0 0 2px; font-size: 1rem; }
+  .yiji p { margin: 0; font-size: 1.02rem; line-height: 1.8; }
+  .yiji.yi h4 { color: var(--moss); }
+  .yiji.ji h4 { color: #7a342c; }
+  .buqu { margin: 10px 0; padding: 10px 12px; border-radius: 12px; background: #f6e6e1; color: #7a342c; font-weight: 700; }
+  .filter button { background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; min-height: 44px; }
+  .yiji p span { white-space: nowrap; display: inline-block; margin-right: 0.8em; }
+  .xb { display: inline-block; font-size: 0.78rem; padding: 1px 8px; border-radius: 999px; background: #f3e3c4; color: #6b4a12; font-weight: 700; margin-right: 6px; }
+  .xbs { font-size: 0.56rem; color: #6b4a12; background: #f3e3c4; border-radius: 6px; padding: 0 3px; margin-top: 1px; }
+  .yiji h4 small { font-weight: 400; color: var(--muted); font-size: 0.75rem; margin-left: 0.5em; }
+  .yiji.xian h4 { color: var(--clay-deep); }
+  .yiji.xieji h4 { color: var(--gold); }
+  .why-x { margin: 8px 0; font-size: 0.88rem; color: var(--muted); }
+  .why-x summary { cursor: pointer; min-height: 36px; display: flex; align-items: center; }
+  .why-x ul { margin: 4px 0 0; padding-left: 1.2em; }
+  .hh-y { color: var(--moss); }
+  .hh-b { color: #7a342c; }
+  .sub { color: var(--muted); font-size: 0.88rem; }
+  @media (min-width: 800px) {
+    .choices { grid-template-columns: repeat(3, 1fr); }
+    #purpose-groups { grid-template-columns: repeat(4, 1fr); }
+    form.panel { padding: 22px 22px 24px; }
+    .layout { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+  }
+  @media print {
+    body { background: white; }
+    .no-print, dialog { display: none !important; }
+    .wrap { width: auto; }
+    form.panel, .help, footer.site { display: none; }
+    .sheet { box-shadow: none; border: 0; padding: 0; }
+    .day-card, .cell { break-inside: avoid; }
+    .note { border: 1px solid #ccc; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="site">
+    <p class="kicker">たくじつ</p>
+    <h1>擇日</h1>
+    <p class="lead">農民暦（通書）と同じように、その日の「宜」と「忌」を出します。やりたいことが宜に入る日を選びます。</p>
+    <p class="note" id="disclaimer">擇日は伝統的な暦の考え方による参考です。最後はご都合と気持ちで決めてください。</p>
+  </header>
+
+  <form class="panel no-print" id="picker">
+    <fieldset>
+      <legend>何をする日ですか</legend>
+      <div class="choices" id="purpose-groups"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>いつのあいだを見ますか</legend>
+      <div class="presets" id="presets">
+        <button type="button" data-days="7">これから1週間</button>
+        <button type="button" data-days="30" aria-pressed="true">1か月</button>
+        <button type="button" data-days="61">2か月</button>
+        <button type="button" data-days="91">3か月</button>
+      </div>
+      <div class="dates">
+        <label class="field">はじめ
+          <input type="date" id="start" required>
+        </label>
+        <label class="field">おわり
+          <input type="date" id="end" required>
+        </label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>協紀不取の日</legend>
+      <p class="hint">用途は通宜（民間の通書の宜）で選びます。『協紀辨方書』で「不取」の日は、印を付けて残します。</p>
+      <label class="check">
+        <input type="checkbox" id="exclude-xieji">
+        <span>協紀不取の日は、一覧から外す</span>
+      </label>
+    </fieldset>
+
+    <details class="birth">
+      <summary>生まれた日を入れる（任意）</summary>
+      <p class="hint">入れると、生まれ年・生まれ日の十二支と沖する日を外せます。</p>
+      <div class="dates">
+        <label class="field">生まれた日
+          <input type="date" id="birth">
+        </label>
+        <label class="field">性別
+          <select id="gender">
+            <option value="">答えない</option>
+            <option value="female">女性</option>
+            <option value="male">男性</option>
+          </select>
+        </label>
+      </div>
+      <div id="risshun-box"></div>
+      <label class="check">
+        <input type="checkbox" id="exclude-clash" checked>
+        <span>沖する日は、一覧から外す</span>
+      </label>
+    </details>
+  </form>
+
+  <section class="sheet" id="sheet" aria-live="polite">
+    <div class="summary" id="summary"></div>
+    <div class="layout">
+      <div>
+        <div class="toolbar no-print">
+          <div class="filter" id="filter">
+            <button type="button" data-filter="ok" aria-pressed="true">宜の日だけ</button>
+            <button type="button" data-filter="all" aria-pressed="false">全部の日</button>
+          </div>
+          <button type="button" class="print-btn" id="print">印刷する</button>
+        </div>
+        <div class="list" id="list"></div>
+      </div>
+      <div>
+        <div class="months" id="months"></div>
+        <p class="legend no-print">
+          <span><i style="background:#d7eee3"></i>通宜（選べる日）</span>
+          <span><i style="background:#f3e3c4"></i>協紀不取の印</span>
+          <span><i style="background:#ffffff;border:1px solid #e3d6c6"></i>どちらでもない</span>
+          <span><i style="background:#f6e6e1"></i>忌・不取</span>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="help no-print">
+    <h2>この暦の見方</h2>
+    <p>通書と同じく、宜を3段で出します。月は節入り（立春・啓蟄…）で区切り、日の干支は午前0時（日本標準時）で替わります。</p>
+    <ul>
+      <li><b>憲宜</b>：官暦の宜。『欽定協紀辨方書』の判定のうち、民用三十七事に入る事目です。</li>
+      <li><b>協紀</b>：同書の判定で宜になり、民用三十七事にない事目（祈福・求嗣・納采・解除・修倉庫など）。1つもない日は「協紀不取」です。同書で「諸事皆忌」の日は、憲宜も不取になります。</li>
+      <li><b>通宜</b>：民間の通書が足す宜。協紀不取の日でも出します。用途はこの通宜で選び、協紀不取の日には印を付けます（設定で外せます）。</li>
+      <li>受死・四廢の日は通宜も「不取」。月破・四離・四絕の日は、破屋・療病などわずかな事だけにします。</li>
+      <li>交車・買車は原典にない事目なので、「出行」が宜の日を交車、さらに交易・立券・納財が宜の日を買車としています。</li>
+      <li>六曜は日本の俗信なので、判定には使わず参考として表示だけしています。</li>
+    </ul>
+    <p>農民暦は出版社によって少しずつ違います。最後はご自分の暦とご都合で決めてください。</p>
+  </section>
+
+  <footer class="site no-print">計算はこのページの中だけで行います。通信も、記録もありません。</footer>
+</div>
+
+<dialog id="day-dialog">
+  <div class="dialog-body" id="dialog-body"></div>
+</dialog>
+
+<script src="js/rules.js"></script>
+<script src="js/astro.js"></script>
+<script src="js/almanac.js"></script>
+<script src="js/calendar.js"></script>
+<script src="js/app.js"></script>
+<!-- 占いの入口とのつなぎ（2026-11-18 みこ追加） -->
+<script src="../hub.js"></script>
+</body>
+</html>

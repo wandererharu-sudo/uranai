@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>易 ― コインで卦を立てる</title>
+<meta name="theme-color" content="#5b4a2f">
+<style id="eki-css">
+:root{--ink:#2b2418;--sub:#6b604f;--bg:#f6f1e7;--card:#fffdf8;--line:#e3d9c6;--acc:#a8432b;--acc2:#5b4a2f;--gold:#b88a2e;--hl:#fff3d6}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP","Noto Serif CJK JP",serif;line-height:1.7;-webkit-text-size-adjust:100%}
+.top{background:var(--acc2);color:#fff;padding:14px 16px}
+.top h1{margin:0;font-size:1.5rem;letter-spacing:.1em}
+.top small{font-size:.8rem;letter-spacing:0;opacity:.85;margin-left:.4em}
+main{max-width:640px;margin:0 auto;padding:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 14px 16px;margin:12px 0;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+h2{font-size:1.1rem;margin:0 0 8px;color:var(--acc2)}
+h3{font-size:1rem;margin:14px 0 6px;color:var(--acc2)}
+textarea{width:100%;font:inherit;font-size:1rem;padding:8px;border:1px solid var(--line);border-radius:8px;background:#fff}
+.note,.howto{font-size:.85rem;color:var(--sub);margin:6px 0}
+.hidden{display:none!important}
+button{font:inherit;cursor:pointer}
+.tabs{display:flex;gap:6px;margin-bottom:6px}
+.tab{flex:1;padding:8px;border:1px solid var(--acc2);background:#fff;color:var(--acc2);border-radius:8px;font-size:.95rem}
+.tab.on{background:var(--acc2);color:#fff}
+.progress{font-weight:bold;margin:8px 0;color:var(--acc)}
+.heads{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.heads button{padding:12px 6px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);display:flex;flex-direction:column;align-items:center}
+.heads button b{font-size:1.15rem}
+.heads button span{font-size:.8rem;color:var(--sub)}
+.heads button:active,.big:active{transform:scale(.98)}
+.heads button:disabled,.big:disabled{opacity:.4}
+.big{width:100%;padding:14px;font-size:1.15rem;border:none;border-radius:10px;background:var(--acc);color:#fff}
+.coins{display:flex;justify-content:center;gap:14px;margin:6px 0 12px}
+.coin{width:58px;height:58px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:bold;background:radial-gradient(circle at 35% 30%,#f3dc9a,#c9a04a 70%,#9c7a2e);color:#4a3712;border:2px solid #8a6a25;box-shadow:0 2px 3px rgba(0,0,0,.2)}
+.coin.ura{background:radial-gradient(circle at 35% 30%,#e6e0d2,#b8ad96 70%,#8f846d);color:#3b352a;border-color:#7d735e}
+.coin.spin{animation:spin .5s ease-out}
+@keyframes spin{0%{transform:rotateY(0) translateY(0)}50%{transform:rotateY(540deg) translateY(-14px)}100%{transform:rotateY(1080deg) translateY(0)}}
+.builder{margin:14px 0 8px;display:flex;flex-direction:column;gap:6px}
+.bline{display:grid;grid-template-columns:3.2em 1fr 5.6em;align-items:center;gap:8px;font-size:.85rem;color:var(--sub)}
+.bline.empty .bar{opacity:.15}
+.bline.new{animation:pop .35s ease-out}
+@keyframes pop{0%{transform:scale(.8);opacity:0}100%{transform:scale(1);opacity:1}}
+.bar{height:16px;display:flex;gap:14%}
+.bar i{flex:1;background:var(--ink);border-radius:2px}
+.bar.mv i{background:var(--acc)}
+.bval b{color:var(--acc)}
+.row{display:flex;gap:8px;margin-top:8px}
+.sub{padding:8px 12px;border:1px solid var(--line);background:#fff;color:var(--sub);border-radius:8px;font-size:.9rem}
+details.rule{margin-top:10px;font-size:.9rem}
+details summary{cursor:pointer;color:var(--acc2);font-weight:bold}
+/* 結果 */
+.qbox{background:var(--bg);border-radius:8px;padding:8px 10px;margin-bottom:10px}
+.qbox .d{font-size:.8rem;color:var(--sub)}
+.hexpair{display:flex;align-items:stretch;gap:6px}
+.hexpair .arrow{align-self:center;color:var(--sub);font-size:1.2rem}
+.hex{flex:1;border:1px solid var(--line);border-radius:10px;padding:10px;background:#fff;text-align:center}
+.hex .kind{font-size:.75rem;color:var(--sub)}
+.hex .num{font-size:.8rem;color:var(--sub)}
+.hex .nm{font-size:1.7rem;font-weight:bold;line-height:1.2}
+.hex .yomi{font-size:.8rem;color:var(--sub)}
+.hex .full{font-size:.9rem}
+.hex .tri{font-size:.78rem;color:var(--sub);margin-top:4px}
+.mini{display:flex;flex-direction:column;gap:4px;width:70%;margin:8px auto}
+.mini .bar{height:10px}
+.mini .r{display:grid;grid-template-columns:1fr 1.2em;align-items:center;gap:4px;font-size:.8rem;color:var(--acc)}
+.read{border:2px solid var(--gold);background:var(--hl);border-radius:10px;padding:10px 12px;margin:14px 0}
+.read h3{margin-top:0}
+.read .rule{font-size:.9rem;margin:0 0 8px}
+.txt{margin:6px 0;padding:6px 8px;border-radius:6px;background:#fff}
+.txt .lab{font-size:.78rem;color:var(--sub);display:block}
+.txt .gen{font-size:1.15rem;letter-spacing:.03em}
+.txt.main{border-left:4px solid var(--acc)}
+.txt.subr{border-left:4px solid var(--line)}
+.tag{display:inline-block;font-size:.72rem;padding:0 6px;border-radius:9px;background:var(--acc);color:#fff;margin-left:4px;vertical-align:middle}
+.tag.s{background:var(--sub)}
+.summary{font-size:.95rem;margin:6px 0}
+.vnote{font-size:.72rem;color:var(--sub)}
+ol.yao{list-style:none;padding:0;margin:6px 0}
+ol.yao li{padding:4px 6px;border-bottom:1px dashed var(--line)}
+ol.yao li.mv{background:var(--hl)}
+ol.yao li .l{font-weight:bold;margin-right:6px}
+details.box{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:10px 0;background:#fff}
+.rel{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.rel>div{border:1px solid var(--line);border-radius:8px;padding:6px;text-align:center;font-size:.85rem}
+.rel b{font-size:1.2rem;display:block}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.actions button{flex:1;min-width:8em;padding:10px;border-radius:8px;border:1px solid var(--acc2);background:#fff;color:var(--acc2)}
+.actions button.pri{background:var(--acc2);color:#fff}
+.hist{list-style:none;padding:0;margin:0 0 8px}
+.hist li{border-bottom:1px solid var(--line);padding:6px 2px;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.hist li button{border:none;background:none;color:var(--acc2);text-align:left;padding:0;flex:1}
+.hist .d{font-size:.75rem;color:var(--sub)}
+.foot{font-size:.78rem;color:var(--sub);text-align:center;padding:10px 0 30px}
+/* v2：5人に共通する見方 */
+.src{font-size:.72rem;color:var(--sub);margin-left:.3em;white-space:nowrap}
+ul.tips{margin:6px 0;padding-left:1.1em;font-size:.9rem}
+ul.tips li{margin:4px 0}
+.pos{font-size:.8rem;color:var(--sub);margin-top:4px;border-top:1px dashed var(--line);padding-top:4px}
+.pos b{color:var(--acc2)}
+.life{border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:10px;padding:8px 12px;margin:12px 0;background:#fff}
+.life h3{margin-top:0}
+.theme{margin:6px 0;font-size:.98rem}
+.theme .k{display:inline-block;font-size:.72rem;padding:0 6px;border-radius:9px;background:var(--gold);color:#fff;margin-right:6px;vertical-align:middle}
+details.before{margin-top:8px;font-size:.9rem}
+/* v3：問いへの読み（みこ追加） */
+.fieldrow{display:block;margin:8px 0 2px;font-size:.95rem}
+.fieldrow select{font:inherit;font-size:1rem;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:#fff}
+.fieldrow small{color:var(--sub);font-size:.8rem}
+.ans{border:2px solid var(--acc2);background:#fff;border-radius:10px;padding:10px 12px;margin:14px 0}
+.ans h3{margin-top:0}
+.ansone{border-top:1px dashed var(--line);padding-top:8px;margin-top:8px}
+.ansone:first-of-type{border-top:none;padding-top:0}
+.anshd{margin:0 0 4px;font-size:1.1rem}
+.anshd .k{display:inline-block;font-size:.72rem;padding:0 6px;border-radius:9px;background:var(--acc2);color:#fff;margin-right:6px;vertical-align:middle}
+.dir{display:inline-block;margin-left:8px;padding:1px 10px;border-radius:12px;font-size:.95rem;font-weight:bold;color:#fff}
+.dir.go{background:#2f7d4f}.dir.slow{background:#b88a2e}.dir.wait{background:#5b6f8f}.dir.back{background:#a8432b}
+.ansyaku{margin:4px 0;font-size:.95rem;color:var(--sub)}
+.ansf{margin:8px 0;padding:8px 10px;background:var(--hl);border-radius:8px;font-size:1.02rem}
+ul.ansul{margin:6px 0;padding-left:1.1em}
+ul.ansul li{margin:4px 0}
+.yaku{display:block;font-size:.9rem;color:var(--sub);margin-top:4px}
+@media print{
+  .top,#sec-q,#sec-cast,#sec-hist,.foot,.actions{display:none!important}
+  body{background:#fff}
+  .card{border:none;box-shadow:none}
+  details.box{border:none}
+  details.box>*{display:block}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>易 <small>コインで卦を立てる（周易）</small></h1>
+</header>
+<main>
+  <section class="card" id="sec-q">
+    <h2>1. 占う問い</h2>
+    <textarea id="question" rows="2" placeholder="例：来月の着工をこのまま進めてよいか（書かなくても占えます）"></textarea>
+    <label class="fieldrow">問いの分野 <select id="field"></select> <small>選ぶと、その分野に合わせた助言が出ます</small></label>
+    <p class="note">問いは送信しません。履歴として、この端末の中だけに残ります。</p>
+    <details class="before" open>
+      <summary>占う前に（5人に共通する心構え）</summary>
+      <div id="before-tips"></div>
+    </details>
+  </section>
+
+  <section class="card" id="sec-cast">
+    <h2>2. コインを6回振る</h2>
+    <div class="tabs" role="tablist">
+      <button type="button" class="tab on" data-mode="real" role="tab">手元のコインで</button>
+      <button type="button" class="tab" data-mode="app" role="tab">アプリで振る</button>
+    </div>
+    <p class="howto" id="howto-real">3枚のコインを一緒に投げて、<b>表が何枚だったか</b>を押してください。1回目がいちばん下の爻（初爻）になります。</p>
+    <p class="howto hidden" id="howto-app">ボタンを押すと、アプリが3枚のコインを振ります（暗号用の乱数を使います）。</p>
+
+    <div class="progress" id="progress">1回目（初爻）</div>
+
+    <div id="input-real" class="heads">
+      <button type="button" data-heads="3"><b>表 3枚</b><span>老陽（変わる）</span></button>
+      <button type="button" data-heads="2"><b>表 2枚</b><span>少陰</span></button>
+      <button type="button" data-heads="1"><b>表 1枚</b><span>少陽</span></button>
+      <button type="button" data-heads="0"><b>表 0枚</b><span>老陰（変わる）</span></button>
+    </div>
+    <div id="input-app" class="hidden">
+      <div class="coins" id="coins"><span class="coin">?</span><span class="coin">?</span><span class="coin">?</span></div>
+      <button type="button" class="big" id="btn-toss">コインを振る</button>
+    </div>
+
+    <div class="builder" id="builder" aria-live="polite"></div>
+    <div class="row">
+      <button type="button" class="sub" id="btn-undo">1つ戻す</button>
+      <button type="button" class="sub" id="btn-reset">最初から</button>
+    </div>
+    <details class="rule">
+      <summary>数え方（三枚銭法）</summary>
+      <p>表＝3、裏＝2として3枚を足します。</p>
+      <ul>
+        <li>表3枚＝9 老陽 ━━━ ○（陽が陰に変わる）</li>
+        <li>表2枚＝8 少陰 ━ ━</li>
+        <li>表1枚＝7 少陽 ━━━</li>
+        <li>表0枚＝6 老陰 ━ ━ ×（陰が陽に変わる）</li>
+      </ul>
+      <p>変わる爻（変爻）があると、変わった先の卦（之卦）も出ます。</p>
+    </details>
+  </section>
+
+  <section class="card hidden" id="sec-result"></section>
+
+  <section class="card" id="sec-hist">
+    <h2>履歴（この端末だけ）</h2>
+    <ul id="hist" class="hist"></ul>
+    <button type="button" class="sub" id="btn-hist-clear">履歴をすべて消す</button>
+  </section>
+
+  <footer class="foot">
+    <p>本文：『周易』卦辞・爻辞（パブリックドメイン、出典は README）。読み方：朱熹『易学啓蒙』。</p>
+    <p>v2「占う前に」「生き方としての読み」「読むときの心得」は、竹村亞希子・白倉信司・服部篤幸・沢井龍醒・東海林秀樹（敬称略）の公開情報のうち、2人以上に共通する見方を自分の言葉でまとめたものです。</p>
+    <p>v3「問いへの読み」（訳・向き・分野ごとの助言）は、卦辞の昔からの読み方をもとに書いたものです。卦全体の読みで、爻ごとの助言ではありません。</p>
+    <p>易は、考えを整えるためのヒントです。決めるのはご自身です。</p>
+  </footer>
+</main>
+<script src="js/texts.js"></script>
+<script src="js/iching.js"></script>
+<script src="js/common.js"></script>
+<script src="js/advice.js"></script>
+<script src="js/app.js"></script>
+<!-- 占いの入口とのつなぎ（2026-11-18 みこ追加） -->
+<script src="../hub.js"></script>
+</body>
+</html>

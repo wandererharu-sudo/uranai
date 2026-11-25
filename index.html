@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>占いの入口</title>
+<style>
+  :root { --ink:#2b2420; --sub:#6f655c; --line:#d6c9b8; --bg:#f7f2ea; --card:#fffdf9; --accent:#8c2f1f; --green:#2f3b36; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:"Yu Gothic UI","Hiragino Sans","Noto Sans JP",sans-serif; line-height:1.7; }
+  header { background:var(--green); color:#fff; padding:18px 16px 14px; text-align:center; }
+  h1 { margin:0; font-family:"Yu Mincho","Hiragino Mincho ProN",serif; font-size:1.7rem; letter-spacing:.2em; font-weight:600; }
+  header p { margin:4px 0 0; font-size:.9rem; opacity:.85; }
+  main { max-width:760px; margin:0 auto; padding:14px 14px 40px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin:12px 0; }
+  h2 { margin:0 0 8px; font-size:1.05rem; color:var(--accent); letter-spacing:.06em; }
+  .row { display:flex; flex-wrap:wrap; gap:10px; }
+  label { display:block; font-size:.86rem; color:var(--sub); flex:1 1 140px; }
+  label.wide { flex:2 1 240px; }
+  input, select { display:block; width:100%; margin-top:3px; padding:9px 8px; font-size:1rem; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); }
+  .hint { color:var(--sub); font-size:.84rem; margin:8px 0 0; }
+  .clear { margin-top:10px; padding:6px 14px; font-size:.9rem; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--sub); cursor:pointer; }
+  .apps { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px; margin-top:4px; }
+  a.app { display:flex; flex-direction:column; gap:4px; text-decoration:none; color:inherit; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px; min-height:128px; transition:box-shadow .15s, border-color .15s; }
+  a.app:hover, a.app:focus-visible { border-color:var(--accent); box-shadow:0 2px 10px rgba(140,47,31,.15); outline:none; }
+  a.app b { font-family:"Yu Mincho","Hiragino Mincho ProN",serif; font-size:1.25rem; color:var(--accent); letter-spacing:.1em; }
+  a.app span { font-size:.9rem; }
+  a.app small { margin-top:auto; font-size:.78rem; color:var(--sub); }
+  .tag { display:inline-block; font-size:.72rem; border-radius:4px; padding:0 6px; margin-left:6px; vertical-align:2px; letter-spacing:0; font-family:"Yu Gothic UI",sans-serif; font-weight:400; }
+  .tag.in { background:#e3ede7; color:#2f5a45; }
+  .tag.net { background:#f3e3d3; color:#8a4b12; }
+  footer { text-align:center; color:var(--sub); font-size:.8rem; padding:0 14px 30px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>占いの入口</h1>
+  <p>ここで一度入れると、どの占いにも入力済みで入れます</p>
+</header>
+
+<main>
+  <section class="card">
+    <h2>占う人</h2>
+    <div class="row">
+      <label class="wide">お名前（任意）
+        <input id="name" type="text" maxlength="20" autocomplete="off" placeholder="例：花子">
+      </label>
+      <label class="wide">ローマ字のお名前（数秘術で使う・任意）
+        <input id="roma" type="text" maxlength="60" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="例：HANAKO YAMADA">
+      </label>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <label>生まれた年（西暦）
+        <select id="y"></select>
+      </label>
+      <label>月
+        <select id="m"></select>
+      </label>
+      <label>日
+        <select id="d"></select>
+      </label>
+      <label>生まれた時刻（わかれば）
+        <input id="time" type="time">
+      </label>
+      <label>性別
+        <select id="gender"><option value="">答えない</option><option value="男">男</option><option value="女">女</option></select>
+      </label>
+    </div>
+    <p class="hint">入れた内容は保存しません。ページを閉じると消えます。各アプリから「占いの入口へ戻る」で戻ると、入れた内容はそのまま残ります。</p>
+    <button type="button" class="clear" id="clear">入力を消す</button>
+  </section>
+
+  <h2 style="margin:18px 2px 6px">占いを選ぶ</h2>
+  <div class="apps">
+    <a class="app" data-app="shichu" href="#"><b>四柱推命<span class="tag net">ネット</span></b><span>生年月日と時刻から、命式と運の流れを読みます。</span><small>公開版のアプリで開きます。お名前と生年月日がアドレスに入ります。</small></a>
+    <a class="app" data-app="ziwei" href="紫微斗数アプリ/index.html"><b>紫微斗数<span class="tag in">入力済みで開く</span></b><span>星を12のマスに配って、人生の分野ごとに読みます。</span><small>生まれた時刻があると、くわしく出ます。PDFで保存できます。</small></a>
+    <a class="app" data-app="suuhi" href="数秘術アプリ/index.html"><b>数秘術<span class="tag in">入力済みで開く</span></b><span>生年月日とローマ字の名前を、数に直して読みます。</span><small>ローマ字のお名前を入れると、名前の数も出ます。</small></a>
+    <a class="app" data-app="takujitsu" href="擇日アプリ/index.html"><b>擇日<span class="tag in">入力済みで開く</span></b><span>契約・引っ越し・地鎮祭などに良い日を探します。</span><small>生年月日を入れると、その人に合わない日を外せます。</small></a>
+    <a class="app" data-app="eki" href="易アプリ/index.html"><b>易</b><span>コインを振って卦を立て、今の問いを読みます。</span><small>生年月日は使いません。</small></a>
+    <a class="app" data-app="gansou" href="顔相アプリ/index.html"><b>顔相<span class="tag net">ネット・キーが要る</span></b><span>顔の写真をAIが読みます。</span><small>写真はGoogleへ送られます。GeminiのAPIキーが要ります。</small></a>
+    <a class="app" data-app="tesou" href="手相アプリ/index.html"><b>手相<span class="tag net">ネット・キーが要る</span></b><span>手のひらの写真をAIが読みます。</span><small>写真はGoogleへ送られます。GeminiのAPIキーが要ります。</small></a>
+  </div>
+</main>
+
+<footer>占いは傾向の参考です。大事な判断は、事実と数字で決めてください。</footer>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var now = new Date();
+  var BASE = {
+    shichu: 'https://wandererharu-sudo.github.io/shichusuimei/',
+    ziwei: '紫微斗数アプリ/index.html', suuhi: '数秘術アプリ/index.html', takujitsu: '擇日アプリ/index.html',
+    eki: '易アプリ/index.html', gansou: '顔相アプリ/index.html', tesou: '手相アプリ/index.html'
+  };
+
+  function opt(sel, value, text) { var o = document.createElement('option'); o.value = value; o.textContent = text; sel.appendChild(o); }
+  opt($('y'), '', '年');
+  for (var i = now.getFullYear(); i >= 1901; i--) opt($('y'), i, i + '年');
+  opt($('m'), '', '月');
+  for (var j = 1; j <= 12; j++) opt($('m'), j, j + '月');
+  function fillDays() {
+    var keep = $('d').value, y = +$('y').value || 2000, m = +$('m').value || 1;
+    var max = new Date(y, m, 0).getDate();
+    $('d').innerHTML = '';
+    opt($('d'), '', '日');
+    for (var k = 1; k <= max; k++) opt($('d'), k, k + '日');
+    if (keep && +keep <= max) $('d').value = keep;
+  }
+  fillDays();
+
+  // 戻ってきた時は、アドレスに付いている内容を入力欄に戻す
+  var q = new URLSearchParams(location.search);
+  if (q.get('y')) $('y').value = q.get('y');
+  if (q.get('m')) $('m').value = q.get('m');
+  fillDays();
+  if (q.get('d')) $('d').value = q.get('d');
+  if (/^\d{1,2}:\d{2}$/.test(q.get('time') || '')) $('time').value = ('0' + q.get('time')).slice(-5);
+  if (q.get('gender') === '男' || q.get('gender') === '女') $('gender').value = q.get('gender');
+  if (q.get('name')) $('name').value = q.get('name').slice(0, 20);
+  if (q.get('roma')) $('roma').value = q.get('roma').slice(0, 60);
+
+  function update() {
+    var y = $('y').value, m = $('m').value, d = $('d').value;
+    var name = $('name').value.trim(), roma = $('roma').value.trim(), time = $('time').value, gender = $('gender').value;
+    var has = y && m && d;
+    // 手元のアプリ用
+    var p = new URLSearchParams();
+    if (has) { p.set('y', y); p.set('m', m); p.set('d', d); }
+    if (time) p.set('time', time);
+    if (gender) p.set('gender', gender);
+    if (name) p.set('name', name);
+    if (roma) p.set('roma', roma);
+    var qs = p.toString();
+    // 四柱推命（公開版）用
+    var s = new URLSearchParams();
+    if (name) s.set('name', name);
+    if (has) { s.set('year', y); s.set('month', m); s.set('day', d); }
+    if (gender) s.set('gender', gender === '女' ? 'female' : 'male');
+    if (time) s.set('time', time);
+    var ss = s.toString();
+    document.querySelectorAll('a.app').forEach(function (a) {
+      var k = a.dataset.app;
+      a.href = BASE[k] + (k === 'shichu' ? (ss ? '?' + ss : '') : (qs ? '?' + qs : ''));
+    });
+    // 自分のアドレスにも残す（再読み込みや「戻る」で消えないように）
+    try { history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '')); } catch (e) {}
+  }
+  ['y', 'm'].forEach(function (id) { $(id).addEventListener('change', function () { fillDays(); update(); }); });
+  ['d', 'time', 'gender'].forEach(function (id) { $(id).addEventListener('change', update); });
+  ['name', 'roma'].forEach(function (id) { $(id).addEventListener('input', update); });
+  $('clear').addEventListener('click', function () {
+    ['name', 'roma', 'y', 'm', 'time', 'gender'].forEach(function (id) { $(id).value = ''; });
+    fillDays(); $('d').value = ''; update();
+  });
+  update();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>数秘術 ― 生年月日と名前の数</title>
+<meta name="theme-color" content="#3f4a6b">
+<meta name="referrer" content="no-referrer">
+<style id="suuhi-css">
+:root{--ink:#24262e;--sub:#5f6472;--bg:#f2f1ec;--card:#fffefb;--line:#dcdbd2;--acc:#a8432b;--acc2:#3f4a6b;--gold:#b88a2e;--hl:#fff3d6}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP","Noto Serif CJK JP",serif;line-height:1.7;-webkit-text-size-adjust:100%}
+.top{background:var(--acc2);color:#fff;padding:14px 16px}
+.top h1{margin:0;font-size:1.5rem;letter-spacing:.1em}
+.top small{font-size:.8rem;letter-spacing:0;opacity:.85;margin-left:.4em}
+main{max-width:640px;margin:0 auto;padding:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 14px 16px;margin:12px 0;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+h2{font-size:1.1rem;margin:0 0 8px;color:var(--acc2)}
+h3{font-size:1rem;margin:14px 0 6px;color:var(--acc2)}
+label.f{display:block;font-weight:bold;margin:10px 0 4px}
+label.f small{font-weight:normal;color:var(--sub)}
+.date{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+select,input[type=text]{font:inherit;font-size:1.05rem;padding:8px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+.date select{flex:1;min-width:0}
+input[type=text]{width:100%}
+.note{font-size:.85rem;color:var(--sub);margin:6px 0}
+.err{color:var(--acc);font-weight:bold;margin:8px 0}
+.hidden{display:none!important}
+button{font:inherit;cursor:pointer}
+.big{width:100%;padding:14px;font-size:1.15rem;border:none;border-radius:10px;background:var(--acc);color:#fff;margin-top:14px}
+.big:active{transform:scale(.98)}
+details.set{margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:#fff}
+details summary{cursor:pointer;color:var(--acc2);font-weight:bold}
+fieldset{border:none;margin:8px 0 4px;padding:0}
+legend{font-weight:bold;font-size:.95rem;padding:0}
+.opt{display:flex;gap:8px;align-items:flex-start;margin:6px 0;font-size:.95rem}
+.opt input{margin-top:.45em;transform:scale(1.2)}
+.opt small{display:block;color:var(--sub);font-size:.8rem;line-height:1.5}
+/* 結果 */
+.who{background:var(--bg);border-radius:8px;padding:8px 10px;margin-bottom:10px;font-size:.9rem}
+.num{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:10px 0;background:#fff}
+.num.main{border:2px solid var(--gold);background:var(--hl)}
+.num .hd{display:flex;align-items:center;gap:12px}
+.num .v{font-size:2.2rem;font-weight:bold;color:var(--acc);line-height:1;min-width:2.4em;text-align:center}
+.num .v.m{font-size:1.8rem}
+.num .t b{display:block;font-size:1rem}
+.num .t span{font-size:.8rem;color:var(--sub)}
+.num .k{display:inline-block;font-size:.8rem;padding:0 8px;border-radius:9px;background:var(--acc2);color:#fff;margin:6px 0 2px}
+.num p{margin:4px 0;font-size:.95rem}
+.calc{font-size:.8rem;color:var(--sub);word-break:break-all;margin-top:4px;border-top:1px dashed var(--line);padding-top:4px}
+.src{font-size:.72rem;color:var(--sub);margin-left:.3em}
+ul.tips{margin:6px 0;padding-left:1.1em;font-size:.9rem}
+ul.tips li{margin:5px 0}
+ul.tips b{color:var(--acc2)}
+.year{display:grid;grid-template-columns:repeat(9,1fr);gap:3px;margin:8px 0}
+.year span{text-align:center;font-size:.85rem;border:1px solid var(--line);border-radius:6px;padding:2px 0;background:#fff;color:var(--sub)}
+.year span.on{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:bold}
+.method{font-size:.8rem;color:var(--sub);border:1px dashed var(--line);border-radius:8px;padding:6px 8px;margin:10px 0}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.actions button{flex:1;min-width:8em;padding:10px;border-radius:8px;border:1px solid var(--acc2);background:#fff;color:var(--acc2)}
+.actions button.pri{background:var(--acc2);color:#fff}
+.foot{font-size:.78rem;color:var(--sub);text-align:center;padding:10px 0 30px}
+.foot a{color:var(--sub)}
+@media print{
+  .top,#sec-in,.foot,.actions{display:none!important}
+  body{background:#fff}
+  .card{border:none;box-shadow:none}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>数秘術 <small>生年月日と名前の数</small></h1>
+</header>
+<main>
+  <section class="card" id="sec-in">
+    <h2>生年月日と名前</h2>
+    <label class="f">生年月日（西暦）</label>
+    <div class="date">
+      <select id="by" aria-label="年"></select>
+      <select id="bm" aria-label="月"></select>
+      <select id="bd" aria-label="日"></select>
+    </div>
+    <label class="f" for="nm">名前のローマ字 <small>（なくても大丈夫です）</small></label>
+    <input type="text" id="nm" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="例：TARO YAMADA">
+    <p class="note">ヘボン式（パスポートと同じ書き方）で、生まれたときの名前を入れます。</p>
+    <p class="note">入れた名前と生年月日は、この画面の中で計算するだけです。どこにも送らず、保存もしません。</p>
+
+    <details class="set" id="settings">
+      <summary>計算のしかた（先生ごとの違い）</summary>
+      <p class="note">初めは、いちばん一般的な形（伊泉龍一さんの方式）になっています。</p>
+      <fieldset id="f-master"><legend>マスター数をどこまで残すか</legend></fieldset>
+      <fieldset id="f-method"><legend>ライフパス数の足し方</legend></fieldset>
+      <fieldset id="f-py"><legend>今年の数（個人年数）の切りかえ</legend></fieldset>
+    </details>
+
+    <p class="err hidden" id="err"></p>
+    <button type="button" class="big" id="btn-go">数を出す</button>
+  </section>
+
+  <section class="card hidden" id="sec-result"></section>
+
+  <footer class="foot">
+    <p>意味と見方は、伊泉龍一・橙花・秦由佳（潜在数秘術協会）・岡田歩・はづき虹映（敬称略）の公開されている発信のうち、2人以上に共通する点を自分の言葉でまとめたものです。</p>
+    <p>数秘術は、自分を知るための参考です。決めるのはご自身です。</p>
+  </footer>
+</main>
+<script src="js/texts.js"></script>
+<script src="js/numerology.js"></script>
+<script src="js/app.js"></script>
+<!-- 占いの入口とのつなぎ（2026-11-18 みこ追加） -->
+<script src="../hub.js"></script>
+</body>
+</html>

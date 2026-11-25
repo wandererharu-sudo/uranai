@@ -1,0 +1,2200 @@
+<!DOCTYPE html>
+<html lang="ja" translate="no">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="google" content="notranslate">
+  <meta name="referrer" content="no-referrer">
+  <meta name="description" content="正面の顔写真から、伝統の人相学（顔相）をやさしい言葉で読む鑑定書です。">
+  <meta name="theme-color" content="#efe4d4">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data: blob:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src https://generativelanguage.googleapis.com; base-uri 'none'; form-action 'none'">
+  <title>顔相鑑定</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect fill='%23f6efe4' width='64' height='64' rx='12'/%3E%3Cellipse cx='32' cy='33' rx='16' ry='21' fill='none' stroke='%238f3d32' stroke-width='3'/%3E%3Cpath d='M24 28h6M34 28h6M32 31v8M27 45q5 3 10 0' fill='none' stroke='%238f3d32' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E">
+  <!--
+    顔相鑑定。このファイルだけで動きます。
+    APIキーは書き込まないでください。使う人の端末の中だけに保存します。
+    モデル名の初期値は、下のスクリプトの DEFAULT_MODEL です。
+  -->
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f3eadc;
+      --paper-deep: #e7d9c6;
+      --card: #fffdf8;
+      --ink: #2c241c;
+      --ink-soft: #5e5146;
+      --muted: #7a6a5c;
+      --line: #e0d0bc;
+      --shu: #8c3b30;
+      --shu-deep: #6f2d25;
+      --gold: #a68456;
+      --moss: #2f5c45;
+      --serif: "Iowan Old Style", "Hiragino Mincho ProN", "Yu Mincho", YuMincho, "Noto Serif JP", serif;
+      --sans: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic Medium", "Yu Gothic", YuGothic, "Noto Sans JP", "Noto Sans CJK JP", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { background: var(--paper); }
+
+    body {
+      margin: 0;
+      min-height: 100%;
+      background:
+        radial-gradient(ellipse at 10% -10%, rgba(255, 252, 245, 0.9), transparent 50%),
+        radial-gradient(ellipse at 110% 0%, rgba(196, 146, 122, 0.16), transparent 42%),
+        var(--paper);
+      color: var(--ink);
+      font-family: var(--sans);
+      font-size: 1.125rem;
+      line-height: 1.75;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    button, input, select, textarea { font: inherit; color: inherit; }
+
+    button { cursor: pointer; }
+
+    .wrap {
+      width: min(40rem, 100%);
+      margin: 0 auto;
+      padding: calc(1rem + env(safe-area-inset-top)) 1.1rem calc(2.2rem + env(safe-area-inset-bottom));
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1.1rem;
+    }
+
+    .brand {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: 1.05rem;
+      letter-spacing: 0.14em;
+      font-weight: 500;
+    }
+
+    h1 {
+      margin: 0 0 0.45rem;
+      font-family: var(--serif);
+      font-weight: 500;
+      font-size: 2rem;
+      line-height: 1.35;
+      letter-spacing: 0.02em;
+    }
+
+    h2 {
+      margin: 0 0 0.7rem;
+      font-family: var(--serif);
+      font-size: 1.55rem;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    .lead { margin: 0 0 0.7rem; }
+
+    .philosophy {
+      margin: 0 0 1.25rem;
+      color: var(--ink-soft);
+      font-size: 1rem;
+      line-height: 1.7;
+    }
+
+    .banner {
+      background: #fffaf3;
+      border: 1px solid #e4c7b4;
+      border-radius: 16px;
+      padding: 0.95rem 1rem 1rem;
+      margin-bottom: 1.15rem;
+    }
+
+    .banner p { margin: 0 0 0.75rem; }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 1rem;
+      margin: 0 0 0.95rem;
+    }
+
+    fieldset {
+      border: 0;
+      margin: 0 0 0.95rem;
+      padding: 0;
+    }
+
+    legend {
+      padding: 0;
+      margin-bottom: 0.45rem;
+      font-weight: 650;
+    }
+
+    .hint, .quiet {
+      color: var(--ink-soft);
+      font-size: 1rem;
+      line-height: 1.65;
+    }
+
+    .hint { margin: 0.35rem 0 0; }
+
+    label.field {
+      display: block;
+      margin: 0 0 0.85rem;
+      font-weight: 650;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    input[type="url"] {
+      display: block;
+      width: 100%;
+      margin-top: 0.35rem;
+      padding: 0.75rem 0.85rem;
+      border: 1.5px solid #d9c7b2;
+      border-radius: 12px;
+      background: #fff;
+      font-weight: 450;
+      line-height: 1.4;
+    }
+
+    input:focus-visible,
+    button:focus-visible {
+      outline: 3px solid #e2b2a4;
+      outline-offset: 2px;
+    }
+
+    .choices {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+    }
+
+    .choice {
+      position: relative;
+      flex: 1 1 7.5rem;
+      min-height: 3.4rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.65rem 0.7rem;
+      border: 1.5px solid #d9c7b2;
+      border-radius: 14px;
+      background: #fff;
+      text-align: center;
+      font-weight: 650;
+    }
+
+    .choice input {
+      position: absolute;
+      opacity: 0;
+      width: 1px;
+      height: 1px;
+    }
+
+    .choice.is-selected {
+      border-color: var(--shu);
+      background: #fbf3ee;
+      box-shadow: inset 0 0 0 1px var(--shu);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 3.4rem;
+      padding: 0.7rem 1.1rem;
+      border-radius: 14px;
+      border: 1.5px solid transparent;
+      text-decoration: none;
+      font-weight: 700;
+      line-height: 1.3;
+      text-align: center;
+    }
+
+    .btn-primary {
+      width: 100%;
+      background: var(--shu);
+      color: #fffaf6;
+      border-color: var(--shu-deep);
+    }
+
+    .btn-primary:active { background: var(--shu-deep); }
+
+    .btn-secondary {
+      width: 100%;
+      background: #fff;
+      color: var(--ink);
+      border-color: #d9c7b2;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--shu-deep);
+      border-color: transparent;
+      min-height: 2.8rem;
+      padding-inline: 0.4rem;
+      font-weight: 650;
+    }
+
+    .btn-row { display: grid; gap: 0.6rem; }
+
+    .btn-row.pair { grid-template-columns: 1fr 1fr; }
+
+    .btn-row.pair .btn {
+      padding-inline: 0.45rem;
+      font-size: 1.02rem;
+    }
+
+    .btn:disabled { opacity: 0.55; cursor: default; }
+
+    .stack { display: grid; gap: 0.65rem; }
+
+    .photo-well {
+      min-height: 9.5rem;
+      border: 1.5px dashed #d3c0aa;
+      border-radius: 16px;
+      background: #fbf7f1;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      margin-bottom: 0.75rem;
+    }
+
+    .photo-well img {
+      width: 100%;
+      max-height: 22rem;
+      object-fit: contain;
+      background: #f6efe6;
+    }
+
+    .empty-photo {
+      padding: 1.2rem;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .empty-photo svg { display: block; margin: 0 auto 0.35rem; }
+
+    .message {
+      margin: 0.75rem 0 0;
+      padding: 0.8rem 0.9rem;
+      border-radius: 12px;
+      background: #fbf1ec;
+      border: 1px solid #e7cfc4;
+    }
+
+    .label {
+      margin: 0.8rem 0 0.1rem;
+      font-size: 0.98rem;
+      letter-spacing: 0.08em;
+      color: var(--shu-deep);
+      font-weight: 700;
+    }
+
+    .message.ok {
+      background: #f3f7f3;
+      border-color: #c9dbc9;
+      color: var(--moss);
+    }
+
+    .visually-hidden {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0, 0, 0, 0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
+    }
+
+    .key-row { display: grid; grid-template-columns: 1fr auto; gap: 0.5rem; align-items: end; }
+
+    .linkish {
+      color: var(--shu-deep);
+      font-weight: 650;
+    }
+
+    .loading-box {
+      min-height: 60vh;
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      text-align: center;
+      gap: 0.4rem;
+      padding: 2rem 0.5rem;
+    }
+
+    .seal {
+      width: 4.2rem;
+      height: 4.2rem;
+      margin: 0 auto 0.55rem;
+      border: 2px solid var(--shu);
+      color: var(--shu);
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-family: var(--serif);
+      font-size: 1.7rem;
+      line-height: 1;
+      transform: rotate(-8deg);
+    }
+
+    .seal.is-waiting { animation: breathe 2.6s ease-in-out infinite; }
+
+    @keyframes breathe {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.55; }
+    }
+
+    .sheet-frame { padding: 7px; }
+
+    .sheet {
+      background: var(--card);
+      border-radius: 8px;
+      box-shadow:
+        0 0 0 1px #c4a882,
+        0 0 0 6px #fffdf8,
+        0 0 0 7px #c4a882,
+        0 16px 40px rgba(70, 46, 28, 0.08);
+      padding: 1.45rem 1.15rem 1.6rem;
+    }
+
+    .sheet-head { text-align: center; margin-bottom: 1.1rem; }
+
+    .sheet-kicker {
+      margin: 0.15rem 0 0.2rem;
+      letter-spacing: 0.18em;
+      font-family: var(--serif);
+      font-size: 0.95rem;
+    }
+
+    .sheet h1 {
+      font-size: 2.05rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .sheet-date { margin: 0; color: var(--ink-soft); font-size: 1rem; }
+
+    .who {
+      margin: 0.85rem 0 0;
+      font-size: 1.08rem;
+    }
+
+    .face-photo {
+      width: 100%;
+      max-height: 28rem;
+      object-fit: contain;
+      background: #f6efe6;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+    }
+
+    figcaption {
+      margin-top: 0.35rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.98rem;
+    }
+
+    .sample-flag {
+      margin: 0.9rem 0 0;
+      padding: 0.7rem 0.85rem;
+      background: #fbf6ea;
+      border: 1px solid #e4d3ae;
+      border-radius: 12px;
+      text-align: left;
+    }
+
+    .block { margin: 1.25rem 0 0; }
+
+    .block h2 {
+      padding-bottom: 0.25rem;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .block h3 {
+      margin: 0.85rem 0 0.15rem;
+      font-size: 1.05rem;
+      color: var(--shu-deep);
+      font-weight: 700;
+    }
+
+    .line-card {
+      margin-top: 0.85rem;
+      padding-top: 0.85rem;
+      border-top: 1px solid var(--line);
+    }
+
+    .line-card h3 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: 1.4rem;
+      font-weight: 500;
+      color: var(--ink);
+    }
+
+    .line-card .about {
+      margin: 0.1rem 0 0.45rem;
+      color: var(--muted);
+      font-size: 0.98rem;
+    }
+
+    .absent {
+      margin: 0.4rem 0 0;
+    }
+
+    .endnote {
+      margin-top: 1.4rem;
+      padding: 0.9rem 0.95rem;
+      border: 1px solid #e4d3ae;
+      background: #fbf8f1;
+      border-radius: 12px;
+      text-align: center;
+      font-family: var(--serif);
+      line-height: 1.8;
+    }
+
+    .actions { margin-top: 1.1rem; }
+
+    details.more {
+      margin-top: 0.8rem;
+      color: var(--ink-soft);
+      font-size: 0.98rem;
+    }
+
+    details.more summary { cursor: pointer; font-weight: 650; color: var(--ink); }
+
+    .tips { margin: 0.4rem 0 0; padding-left: 1.2rem; }
+
+    .tips li { margin: 0.2rem 0; }
+
+    p, li, .lead, .philosophy, .who, .quiet, .hint, figcaption {
+      line-break: strict;
+      word-break: auto-phrase;
+      text-wrap: pretty;
+    }
+
+    @media (min-width: 720px) {
+      h1 { font-size: 2.35rem; }
+      .btn-row.pair .btn { font-size: 1.125rem; }
+      .sheet { padding: 2rem 1.8rem 2.1rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .seal.is-waiting { animation: none; }
+    }
+
+
+    .face-photo { max-height: 24rem; }
+
+    h1:focus { outline: none; }
+
+    .tip-list {
+      margin: 0.2rem 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.45rem;
+    }
+
+    .tip-list li {
+      display: flex;
+      gap: 0.45rem;
+      align-items: center;
+      padding: 0.5rem 0.6rem;
+      background: #fbf7f1;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      font-size: 1rem;
+      line-height: 1.45;
+    }
+
+    .tip-list .num {
+      flex: none;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      background: var(--shu);
+      color: #fffaf6;
+      display: grid;
+      place-items: center;
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    .santei-row {
+      display: grid;
+      grid-template-columns: 4.6rem 1fr;
+      gap: 0.6rem;
+      margin-top: 0.75rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--line);
+    }
+
+    .santei-row .tag {
+      font-family: var(--serif);
+      font-size: 1.25rem;
+      color: var(--shu-deep);
+      line-height: 1.3;
+    }
+
+    .santei-row .tag small {
+      display: block;
+      font-family: var(--sans);
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .santei-row p { margin: 0 0 0.35rem; }
+
+    .element-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 0.3rem 0 0.2rem;
+      padding: 0.25rem 0.8rem 0.25rem 0.3rem;
+      border: 1px solid #e4c7b4;
+      border-radius: 999px;
+      background: #fbf3ee;
+      font-weight: 650;
+    }
+
+    .element-badge .kanji {
+      width: 2rem;
+      height: 2rem;
+      border-radius: 50%;
+      background: var(--shu);
+      color: #fffaf6;
+      display: grid;
+      place-items: center;
+      font-family: var(--serif);
+      font-size: 1.15rem;
+    }
+
+    .good-list, .care-list, .luck-list {
+      margin: 0.4rem 0 0;
+      padding-left: 1.3rem;
+    }
+
+    .good-list li, .care-list li, .luck-list li { margin: 0.3rem 0; }
+
+    .good-list li::marker { color: var(--moss); }
+    .care-list li::marker { color: var(--gold); }
+    .luck-list li::marker { color: var(--shu); }
+
+    .place {
+      margin: 0.05rem 0 0.4rem;
+      color: var(--muted);
+      font-size: 0.98rem;
+    }
+    @media print {
+      html, body { background: #fff !important; }
+      .no-print { display: none !important; }
+      .wrap { max-width: none; padding: 0; }
+      .sheet-frame { padding: 0; }
+      .sheet {
+        box-shadow: none;
+        border: 1px solid #bfae96;
+        border-radius: 0;
+      }
+      .line-card, .santei-row { break-inside: avoid; }
+      .block h2 { break-after: avoid; }
+      a { color: inherit; text-decoration: none; }
+      @page { margin: 12mm; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="topbar no-print">
+      <p class="brand">顔相</p>
+      <button type="button" class="btn btn-ghost" id="openSettings">設定</button>
+    </header>
+
+    <main id="screen-home">
+      <h1>おもざしを、<br>そっと読む</h1>
+      <p class="lead">正面の顔写真から、三停・五官・十二宮など、伝統の人相学に沿ってやさしい言葉にします。</p>
+      <p class="philosophy">顔相は傾向の参考です。ご本人の意志と行動が運命を作ります。</p>
+
+      <div class="banner" id="keyBanner">
+        <p>鑑定には、GeminiのAPIキーが要ります。いちど保存すれば、この端末が覚えています。</p>
+        <button type="button" class="btn btn-secondary" id="openSettingsBanner">設定を開く</button>
+      </div>
+
+      <form id="readForm" novalidate>
+        <section class="card">
+          <h2>写真</h2>
+          <div class="photo-well">
+            <div class="empty-photo" id="photoEmpty">
+              <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true">
+                <ellipse cx="32" cy="32" rx="17" ry="22" fill="none" stroke="#c4a882" stroke-width="2"/>
+                <path d="M23 27h6M35 27h6M32 30v8M27 44q5 3 10 0" fill="none" stroke="#a68456" stroke-width="2.4" stroke-linecap="round"/>
+              </svg>
+              まだ写真がありません
+            </div>
+            <img id="photoPreview" alt="選んだ顔の写真" hidden>
+          </div>
+          <div class="btn-row pair">
+            <label class="btn btn-primary" for="cameraInput">カメラで撮る</label>
+            <label class="btn btn-secondary" for="fileInput">アルバムから選ぶ</label>
+          </div>
+          <p class="label">撮り方のコツ</p>
+          <ul class="tip-list">
+            <li><span class="num">1</span>明るい所で</li>
+            <li><span class="num">2</span>前髪を上げる</li>
+            <li><span class="num">3</span>眼鏡を外す</li>
+            <li><span class="num">4</span>真正面から</li>
+          </ul>
+          <p class="hint" id="photoMeta">額から顎まで、耳も入るように。表情は自然なままで大丈夫です。</p>
+          <div class="message" id="photoError" hidden></div>
+        </section>
+
+        <section class="card">
+          <h2>よろしければ</h2>
+          <p class="quiet">空欄のままでも鑑定できます。名前は、この端末にも残しません。ほかの方の写真は、ご本人の了承を得てからお使いください。</p>
+          <label class="field">呼び名
+            <input type="text" id="nameInput" name="name" maxlength="40" autocomplete="nickname" placeholder="例）はる">
+          </label>
+          <label class="field">年齢
+            <input type="text" id="ageInput" name="age" inputmode="numeric" maxlength="3" autocomplete="off" placeholder="例）62">
+          </label>
+          <fieldset>
+            <legend>性別</legend>
+            <div class="choices">
+              <label class="choice"><input type="radio" name="gender" value="女性"><span>女性</span></label>
+              <label class="choice"><input type="radio" name="gender" value="男性"><span>男性</span></label>
+              <label class="choice"><input type="radio" name="gender" value="答えない"><span>答えない</span></label>
+            </div>
+          </fieldset>
+        </section>
+
+        <p class="quiet" id="keyReady" hidden>この端末に、APIキーが保存されています。</p>
+        <div class="message" id="formError" hidden></div>
+        <div class="stack" style="margin-top: 0.9rem">
+          <button type="submit" class="btn btn-primary" id="submitBtn">この顔相を見る</button>
+          <button type="button" class="btn btn-secondary" id="sampleBtn">見本の鑑定書を見る</button>
+        </div>
+      </form>
+
+      <p class="hint" style="margin-top: 1.1rem">写真は鑑定のためにGeminiへ送るだけで、このアプリには保存しません。アクセスの記録も取りません。</p>
+    </main>
+
+    <main id="screen-settings" hidden>
+      <h1>設定</h1>
+      <p class="lead">APIキーは、この端末の中だけに保存されます。アプリのプログラムには、最初からキーは入っていません。</p>
+
+      <form id="settingsForm">
+        <label class="field" for="apiKeyInput">GeminiのAPIキー
+          <span class="key-row">
+            <input type="password" id="apiKeyInput" autocomplete="off" spellcheck="false" placeholder="ここに貼り付け">
+            <button type="button" class="btn btn-secondary" id="toggleKey" style="width: auto">表示</button>
+          </span>
+        </label>
+        <p class="hint"><a class="linkish" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">APIキーの作り方（Google AI Studio）</a></p>
+
+        <label class="field" for="modelInput">モデル名
+          <input type="text" id="modelInput" autocomplete="off" spellcheck="false">
+        </label>
+        <p class="hint">通常は、このままで大丈夫です。うまくいかないときだけ変えてください。空にして保存すると、最初の名前に戻ります。</p>
+        <p><button type="button" class="btn btn-ghost" id="resetModel">最初のモデル名に戻す</button></p>
+
+        <div class="stack">
+          <button type="submit" class="btn btn-primary" id="saveSettings">保存する</button>
+          <button type="button" class="btn btn-secondary" id="clearKey">キーをこの端末から消す</button>
+          <button type="button" class="btn btn-ghost" id="backFromSettings">もどる</button>
+        </div>
+      </form>
+      <div class="message" id="settingsStatus" hidden></div>
+
+      <section class="card" style="margin-top: 1.2rem">
+        <h2>だいじなこと</h2>
+        <p>キーは、このスマートフォン（またはパソコン）の中だけに残ります。どこかのサーバーへ預けたりはしません。鑑定のときだけ、写真と一緒にGoogleのGeminiへ直接送られます。</p>
+        <p>写真は、このアプリには保存しません。共有の端末では、使い終わったらキーを消してください。キーは人に教えないでください。</p>
+        <p>手相アプリと同じキーが使えます。ただし、ページの置き場所（リポジトリ）が違うと、キーはもう一度保存が要ります。</p>
+      </section>
+    </main>
+
+    <main id="screen-loading" hidden>
+      <div class="loading-box">
+        <div class="seal is-waiting" aria-hidden="true">相</div>
+        <h1 id="loadingMessage">おもざしを拝見しています</h1>
+        <p class="quiet">数十秒かかることがあります。この画面のまま、少々お待ちください。</p>
+        <button type="button" class="btn btn-ghost" id="cancelLoading">やめる</button>
+      </div>
+    </main>
+
+    <main id="screen-result" hidden>
+      <div class="sheet-frame">
+        <article class="sheet" id="resultSheet"></article>
+      </div>
+      <div class="stack actions no-print">
+        <button type="button" class="btn btn-primary" id="saveHtmlBtn">鑑定書をHTMLで保存</button>
+        <button type="button" class="btn btn-secondary" id="printBtn">印刷・PDFに保存</button>
+        <p class="hint">HTMLで保存すると、ファイル1つで、あとからブラウザで開けます。印刷の画面で「PDFに保存」も選べます。</p>
+        <button type="button" class="btn btn-ghost" id="restartBtn">はじめから</button>
+      </div>
+    </main>
+  </div>
+
+  <input id="cameraInput" class="visually-hidden" type="file" accept="image/*" capture="user">
+  <input id="fileInput" class="visually-hidden" type="file" accept="image/*">
+
+  <script>
+    "use strict";
+
+    // モデル名は、ここと設定画面のどちらからでも変えられます。
+    // gemini-2.5-flash は 2026-12-01 以降、別のモデルへ自動的に振り分けられます。
+    var DEFAULT_MODEL = "gemini-3.8-flash";
+    var STORAGE_KEY = "gansou.apiKey";
+    var STORAGE_MODEL = "gansou.model";
+    var DISCLAIMER = "顔相は傾向の参考です。ご本人の意志と行動が運命を作ります。";
+    var API_ORIGIN = "https://generativelanguage.googleapis.com/v1beta/models/";
+
+    var SANTEI_FIELDS = [
+      ["upper", "上停", "髪の生え際〜眉", "若い頃の運・知性・目上との縁"],
+      ["middle", "中停", "眉〜鼻先", "働き盛りの運・行動力・意志"],
+      ["lower", "下停", "鼻の下〜顎", "晩年の運・家庭・落ち着き"]
+    ];
+
+    var GOKAN_FIELDS = [
+      ["brows", "眉", "保寿官", "気持ちの表れ方と、兄弟・友人との縁"],
+      ["eyes", "目", "監察官", "心の向き方と、物事を見る力"],
+      ["nose", "鼻", "審弁官", "自分を立てる力と、お金との付き合い方"],
+      ["mouth", "口", "出納官", "言葉と食、人との信頼"],
+      ["ears", "耳", "採聴官", "生まれ持った気質と、人の話を聞く力"]
+    ];
+
+    var PALACES = {
+      "命宮": "印堂（眉と眉のあいだ）",
+      "財帛宮": "鼻（とくに鼻先・小鼻）",
+      "官禄宮": "額の中央",
+      "田宅宮": "眉と目のあいだ（上まぶた）",
+      "兄弟宮": "眉",
+      "夫妻宮": "目尻の横（奸門）",
+      "子女宮": "目の下（涙堂）",
+      "疾厄宮": "鼻の付け根（山根）",
+      "遷移宮": "額の両端・こめかみの上",
+      "奴僕宮": "顎の両脇",
+      "福徳宮": "眉尻の上",
+      "父母宮": "額の上の左右（日角・月角）"
+    };
+    var PALACE_NAMES = Object.keys(PALACES);
+
+    var ELEMENTS = {
+      "木": "木形（面長でほっそり）",
+      "火": "火形（額が狭く顎がとがる、逆三角）",
+      "土": "土形（厚みがあり、どっしり四角め）",
+      "金": "金形（四角く、輪郭がはっきり）",
+      "水": "水形（丸く、ふっくら）"
+    };
+
+    // 観相家の共通の見方（2人以上の観相家が共通して説いていることだけ。出典は README）。
+    // 画面には人名を出しません。
+    var COMMON_GUIDE = [
+      ["額・三停", "額は、前髪で隠さず出していると明るく開いた印象になり、運も開きやすいと読まれます。広くつやのある額は、考える力・学ぶ力のしるしとされます。"],
+      ["眉", "眉は、意志や気持ちの表れです。顔の中でいちばん変えやすい部位で、整えると印象も運も変わると読まれます。"],
+      ["眉間", "眉と眉のあいだが開いて明るいのは、心のゆとりと、人を受け入れる器の広さのしるしです。眉間をゆるめて開く表情がすすめられます。"],
+      ["目", "目は心の窓で、目の輝きはいまの気力を映します。目尻が穏やかに下がるのは、やさしさや受け入れる心の表れと読まれます。大きめの目は感受性や好奇心、小さめの目は慎重さや堅実さと読まれます。"],
+      ["鼻", "鼻は、その人自身と、自分を立てる力・活力・稼ぐ力を表すと読まれます。"],
+      ["口", "口角が上がっていることを、何より大切な開運のしるしとします。唇のふっくらした厚みは情の厚さ、締まった口元はしっかりした気持ちと読まれます。"],
+      ["耳", "肉付きのよい耳はよい相とされます。前を向いた耳は、人の話をよく聞く人と読まれます。"],
+      ["あご・頬", "あごは暮らしの土台・家庭・晩年を表し、丸みや豊かさは安定のしるしと読まれます。丸くふっくらした頬は、人との関わりのよさにつながると読まれます。"],
+      ["顔の形", "全体に丸みがあり、眉尻と口角が穏やかに結ばれた「顔の中に丸がある」ような顔を、やわらかく調和のとれた吉相とします。"],
+      ["血色・表情", "肌のつや・ハリ・明るさは、いまの状態や運の流れのしるしで、睡眠・食事・手入れで整っていきます。いつもしている表情は、やがて顔つきとして定着すると考えます。"],
+      ["しわ・ほくろ", "笑いじわや額のしわは、生きてきた年輪としてよいものとされます。眉間のしわは力みの跡で、ゆるめることでほぐれていきます。ほくろは位置で意味を読みますが、気にしすぎないことが大切とされます。"]
+    ];
+    var COMMON_PARTS = COMMON_GUIDE.map(function (g) { return g[0]; });
+    var COMMON_CORE = "顔は生まれつきで決まるものではなく、表情・暮らし方・心の持ち方の積み重ねで変わっていく。";
+
+    var featureSchema = {
+      type: "object",
+      properties: {
+        visible: { type: "boolean", description: "この写真で、はっきり見えるか" },
+        seen: { type: "string", description: "形・大きさ・位置・つや。見えないときはその旨だけ" },
+        reading: { type: "string", description: "伝統的な意味をふまえたやさしい読み。見えないときは空文字" }
+      },
+      required: ["visible", "seen", "reading"]
+    };
+
+    var partSchema = {
+      type: "object",
+      properties: {
+        seen: { type: "string" },
+        reading: { type: "string" }
+      },
+      required: ["seen", "reading"]
+    };
+
+    var RESPONSE_SCHEMA = {
+      type: "object",
+      properties: {
+        isFace: { type: "boolean", description: "正面の顔として鑑定できる写真か。顔でない・不鮮明・横向き・顔の大半が隠れているときは false" },
+        retakeMessage: { type: "string", description: "撮り直してほしいときの案内。鑑定できるときは空文字" },
+        summary: { type: "string" },
+        santei: {
+          type: "object",
+          properties: {
+            upper: partSchema,
+            middle: partSchema,
+            lower: partSchema,
+            balance: { type: "string", description: "三停の釣り合いのまとめ" }
+          },
+          required: ["upper", "middle", "lower", "balance"]
+        },
+        gokan: {
+          type: "object",
+          properties: {
+            brows: featureSchema,
+            eyes: featureSchema,
+            nose: featureSchema,
+            mouth: featureSchema,
+            ears: featureSchema
+          },
+          required: ["brows", "eyes", "nose", "mouth", "ears"]
+        },
+        palaces: {
+          type: "array",
+          description: "十二宮のうち、この顔で目立つところを3〜5つ",
+          items: {
+            type: "object",
+            properties: {
+              name: { type: "string", enum: PALACE_NAMES },
+              seen: { type: "string" },
+              reading: { type: "string" }
+            },
+            required: ["name", "seen", "reading"]
+          }
+        },
+        faceShape: {
+          type: "object",
+          properties: {
+            element: { type: "string", enum: ["木", "火", "土", "金", "水"] },
+            seen: { type: "string" },
+            reading: { type: "string" }
+          },
+          required: ["element", "seen", "reading"]
+        },
+        complexion: partSchema,
+        commonViews: {
+          type: "array",
+          description: "観相家の共通の見方。この写真で目立つ部位を2〜4つ、読み方の手引きに沿って",
+          items: {
+            type: "object",
+            properties: {
+              part: { type: "string", enum: COMMON_PARTS },
+              seen: { type: "string" },
+              reading: { type: "string" }
+            },
+            required: ["part", "seen", "reading"]
+          }
+        },
+        strengths: { type: "array", items: { type: "string" }, description: "よいところ。2〜4つ" },
+        cautions: { type: "array", items: { type: "string" }, description: "気をつけたいところ。1〜3つ。やわらかく" },
+        luckTips: { type: "array", items: { type: "string" }, description: "開運のヒント。2〜4つ。今日からできる小さなこと" },
+        disclaimer: { type: "string" }
+      },
+      required: [
+        "isFace", "retakeMessage", "summary", "santei", "gokan", "palaces",
+        "faceShape", "complexion", "commonViews", "strengths", "cautions", "luckTips", "disclaimer"
+      ]
+    };
+
+    var state = {
+      photo: null,
+      abort: null,
+      loadingTimer: null,
+      clearArmed: false,
+      lastView: null
+    };
+
+    function $(id) { return document.getElementById(id); }
+
+    function clean(value, max) {
+      return String(value || "").replace(/[\u0000-\u001f]/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
+    }
+
+    function normalizeDigits(value) {
+      return String(value || "").replace(/[０-９]/g, function (ch) {
+        return String.fromCharCode(ch.charCodeAt(0) - 0xFEE0);
+      });
+    }
+
+    function readStoredKey() {
+      try { return localStorage.getItem(STORAGE_KEY) || ""; }
+      catch (e) { return ""; }
+    }
+
+    function readStoredModel() {
+      try { return localStorage.getItem(STORAGE_MODEL) || ""; }
+      catch (e) { return ""; }
+    }
+
+    function currentModel() {
+      return readStoredModel() || DEFAULT_MODEL;
+    }
+
+    function buildPrompt(profile) {
+      var palaceGuide = PALACE_NAMES.map(function (name) { return name + "＝" + PALACES[name]; }).join("、");
+      var commonGuide = COMMON_GUIDE.map(function (g) { return "- " + g[0] + ": " + g[1]; });
+      var lines = [
+        "あなたは、東洋の伝統的な人相学（麻衣相法・神相全編の流れをくむ顔相）を、やさしく読み解く鑑定士です。添付の写真だけを根拠に、指定のJSONだけを返してください。",
+        "",
+        "【相談者】",
+        "呼び名: " + (profile.name || "未記入"),
+        "年齢: " + (profile.age || "未記入"),
+        "性別: " + (profile.gender || "未記入"),
+        "",
+        "【読む枠組み】",
+        "- 三停: 上停（髪の生え際〜眉）、中停（眉〜鼻先）、下停（鼻の下〜顎）。それぞれの広さ・張り・釣り合い。balance に三つの釣り合いのまとめ。",
+        "- 五官: 眉（保寿官）、目（監察官）、鼻（審弁官）、口（出納官）、耳（採聴官）。",
+        "- 十二宮: " + palaceGuide + "。このうち、この顔で目立つところを3〜5つだけ palaces に入れる。name は必ず上の宮名のどれか。",
+        "- 顔の形（五行）: 木形＝面長でほっそり、火形＝額が狭く顎がとがる、土形＝厚みがありどっしり、金形＝四角く輪郭がはっきり、水形＝丸くふっくら。いちばん近いものを element に一字で。混ざっていれば seen で触れる。",
+        "- 血色: 写真で分かる範囲の、つやと明るさ。照明や化粧、カメラの色の影響を受けることを前提に、控えめに読む。",
+        "",
+        "【読み方の手引き（多くの観相家に共通する見方）】",
+        "- 土台の考え: " + COMMON_CORE + "造りの良し悪しより、いまの表情・つや・明るさを重く見る。パーツ一つで決めず、顔全体で見る。"
+      ].concat(commonGuide, [
+        "- commonViews には、この写真でいちばん目立つ部位を2〜4つ選び、part は上の見出しのどれかにする。seen に写真で見えたこと、reading に手引きに沿ったやさしい読みを書く。手引きにない意味を足さない。人名・流派名は書かない。見えない部位は選ばない。",
+        "",
+        "【守ること】",
+        "- 写真が人の顔でない、顔が二人以上、暗すぎる、ピンぼけ、横向き、顔の大半が隠れている（マスク、手、強い影など）場合は isFace を false にする。retakeMessage に撮り直しのお願いとコツ（明るい所、前髪を上げる、眼鏡を外す、真正面から、顔全体と耳まで入れる）を書く。その場合、顔の特徴や運勢を創作しない。ほかの文章はすべて空文字、配列は空にし、faceShape.element は「土」としてよい。",
+        "- 前髪や眼鏡、髪で見えない部分は、五官なら visible を false にし、seen に「この写真でははっきり見えません」と書く。想像で埋めない。見えないことを悪い印にしない。",
+        "- 断定しない。「〜の傾向」「〜と読まれます」「〜かもしれません」のように書く。",
+        "- 不安を煽る表現、脅す言葉、「凶相」「破れ」「短命」などの言い切りは使わない。",
+        "- 病気、病名、寿命、死、事故、離婚・死別の時期は書かない。疾厄宮に触れるときも、体調の判断はせず、休み方や暮らし方のヒントにとどめる。",
+        "- 容姿をけなす表現、美醜の評価、「〜が小さすぎる」「〜が悪い」のような否定は書かない。特徴は、伝統の読み方として中立に描写する。",
+        "- 人種・民族・国籍を推測しない。年齢や性別も推測で書かない（相談者が書いたものだけ使う）。",
+        "- cautions は、気をつけたいところを、やわらかく前向きな言い方で書く。",
+        "- luckTips は、今日からできる小さな開運のヒント（表情、身だしなみ、言葉、暮らし）。少なくとも1つは「顔は表情や暮らし方で変わっていく」という考えに沿ったもの（口角を上げる、眉間をゆるめる、額を出す、よく眠る、など）にする。",
+        "- 丁寧語で、60代の方にも読みやすい長さにする。各文章は2〜4文まで。",
+        "- 呼び名があるときは、summary で自然に一度だけ使う。",
+        "- disclaimer は次の一文そのものにする: " + DISCLAIMER
+      ]);
+      return lines.join("\n");
+    }
+
+    // Gemini Generative Language API（generateContent）の現行REST形式。手相アプリと同じ。
+    // 画像は inline_data.mime_type / data。JSONは generationConfig.responseFormat。
+    // 認証はヘッダー x-goog-api-key だけ。URLにも本文にもキーを入れない。
+    function buildGeminiRequest(opts) {
+      var model = opts.model || DEFAULT_MODEL;
+      var generationConfig = {
+        temperature: 0.6,
+        maxOutputTokens: 8192,
+        responseFormat: {
+          text: {
+            mimeType: "APPLICATION_JSON",
+            schema: RESPONSE_SCHEMA
+          }
+        }
+      };
+      var thinking = thinkingConfigFor(model);
+      if (thinking) generationConfig.thinkingConfig = thinking;
+      return {
+        url: API_ORIGIN + encodeURIComponent(model) + ":generateContent",
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": opts.apiKey
+        },
+        body: {
+          contents: [{
+            parts: [
+              { text: buildPrompt(opts.profile) },
+              {
+                inline_data: {
+                  mime_type: opts.mimeType || "image/jpeg",
+                  data: opts.base64
+                }
+              }
+            ]
+          }],
+          generationConfig: generationConfig
+        }
+      };
+    }
+
+    function thinkingConfigFor(model) {
+      if (/^gemini-2\.5/.test(model)) return { thinkingBudget: 0 };
+      if (/^gemini-[34]/.test(model)) return { thinkingLevel: "low" };
+      return null;
+    }
+
+    function extractModelText(data) {
+      var feedback = data && data.promptFeedback;
+      if (feedback && feedback.blockReason) {
+        var blocked = new Error("BLOCKED");
+        blocked.code = "BLOCKED";
+        throw blocked;
+      }
+      var candidates = data && data.candidates;
+      if (!candidates || !candidates.length) {
+        var empty = new Error("EMPTY");
+        empty.code = "EMPTY";
+        throw empty;
+      }
+      var candidate = candidates[0];
+      var finish = candidate.finishReason || "";
+      if (finish && finish !== "STOP" && finish !== "MAX_TOKENS") {
+        var stopped = new Error(finish);
+        stopped.code = finish === "SAFETY" ? "SAFETY" : "FINISH";
+        throw stopped;
+      }
+      var parts = (candidate.content && candidate.content.parts) || [];
+      var text = parts.filter(function (part) {
+        return part && part.text && !part.thought;
+      }).map(function (part) { return part.text; }).join("\n").trim();
+      if (!text) {
+        var noText = new Error("EMPTY");
+        noText.code = "EMPTY";
+        throw noText;
+      }
+      if (finish === "MAX_TOKENS") {
+        var cut = new Error("MAX_TOKENS");
+        cut.code = "MAX_TOKENS";
+        cut.text = text;
+        throw cut;
+      }
+      return text;
+    }
+
+    function parseModelJson(text) {
+      var trimmed = String(text || "").trim();
+      if (trimmed.indexOf("```") === 0) {
+        trimmed = trimmed.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+      }
+      return JSON.parse(trimmed);
+    }
+
+    function asText(value) {
+      if (value == null) return "";
+      return String(value).trim();
+    }
+
+    function friendlyError(info) {
+      info = info || {};
+      var status = info.status || 0;
+      var reason = info.reason || "";
+      var errorStatus = info.errorStatus || "";
+      var message = info.message || "";
+      var code = info.code || "";
+      if (code === "network" || info.network) {
+        return {
+          title: "通信できませんでした",
+          body: "電波のよい場所で、もう一度お試しください。写真はそのまま残してあります。"
+        };
+      }
+      if (code === "timeout") {
+        return {
+          title: "時間がかかりすぎました",
+          body: "混み合っていることがあります。しばらくしてから、もう一度お試しください。"
+        };
+      }
+      if (code === "format") {
+        return {
+          title: "この写真を読み取れませんでした",
+          body: "もう一度カメラで撮るか、JPEGの写真を選び直してください。"
+        };
+      }
+      if (code === "BLOCKED" || code === "SAFETY") {
+        return {
+          title: "この写真では鑑定できませんでした",
+          body: "顔が正面から明るく写った写真で、もう一度お試しください。"
+        };
+      }
+      if (code === "BAD_JSON" || code === "EMPTY" || code === "MAX_TOKENS" || code === "FINISH") {
+        return {
+          title: "返事を読み取れませんでした",
+          body: "もう一度お試しください。同じ写真のままで大丈夫です。"
+        };
+      }
+      if (reason === "API_KEY_INVALID" || status === 401 || status === 403 || /API key/i.test(message)) {
+        return {
+          title: "APIキーが合っていないようです",
+          body: "設定を開いて、Google AI Studioのキーを、もう一度貼り付けてください。"
+        };
+      }
+      if (status === 429 || errorStatus === "RESOURCE_EXHAUSTED" || /quota|rate limit/i.test(message)) {
+        return {
+          title: "いま、利用回数の上限に達しているようです",
+          body: "しばらく時間をおいてから、もう一度お試しください。"
+        };
+      }
+      if (status === 404 || (status === 400 && /not found|unknown model|invalid model|is not supported/i.test(message))) {
+        return {
+          title: "モデル名が見つかりませんでした",
+          body: "設定のモデル名を " + DEFAULT_MODEL + " に戻して、もう一度お試しください。"
+        };
+      }
+      if (status === 402 || errorStatus === "FAILED_PRECONDITION") {
+        return {
+          title: "Google側の利用設定を確認してください",
+          body: "APIキーのプランやお支払いの設定が必要なことがあります。Google AI Studioでご確認ください。"
+        };
+      }
+      if (status >= 500) {
+        return {
+          title: "Google側が混み合っているようです",
+          body: "少し時間をおいて、もう一度お試しください。"
+        };
+      }
+      return {
+        title: "鑑定を受け取れませんでした",
+        body: "しばらくしてから、もう一度お試しください。"
+      };
+    }
+
+    function readErrorInfo(payload, status) {
+      var error = payload && payload.error;
+      if (!error && Array.isArray(payload) && payload[0]) error = payload[0].error;
+      var reason = "";
+      var details = error && error.details;
+      if (Array.isArray(details)) {
+        details.forEach(function (detail) {
+          if (detail && detail.reason) reason = detail.reason;
+        });
+      }
+      return {
+        status: status,
+        errorStatus: (error && error.status) || "",
+        reason: reason,
+        message: (error && error.message) || ""
+      };
+    }
+
+    function loadImage(url) {
+      return new Promise(function (resolve, reject) {
+        var img = new Image();
+        img.onload = function () { resolve(img); };
+        img.onerror = function () { reject(new Error("format")); };
+        img.src = url;
+      });
+    }
+
+    function blobToDataUrl(blob) {
+      return new Promise(function (resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function () { resolve(reader.result); };
+        reader.onerror = function () { reject(new Error("format")); };
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    function canvasToBlob(canvas, quality) {
+      return new Promise(function (resolve) {
+        canvas.toBlob(resolve, "image/jpeg", quality);
+      });
+    }
+
+    async function compressImageFile(file) {
+      if (!file) {
+        var missing = new Error("format");
+        missing.code = "format";
+        throw missing;
+      }
+      if (file.type && file.type.indexOf("image/") !== 0) {
+        var kind = new Error("format");
+        kind.code = "format";
+        throw kind;
+      }
+      var source = null;
+      var closable = false;
+      try {
+        if (typeof createImageBitmap === "function") {
+          source = await createImageBitmap(file, { imageOrientation: "from-image" });
+          closable = true;
+        }
+      } catch (e) {
+        source = null;
+      }
+      var objectUrl = "";
+      if (!source) {
+        objectUrl = URL.createObjectURL(file);
+        try {
+          source = await loadImage(objectUrl);
+        } catch (e) {
+          URL.revokeObjectURL(objectUrl);
+          var failed = new Error("format");
+          failed.code = "format";
+          throw failed;
+        }
+      }
+      var sw = source.width || source.naturalWidth;
+      var sh = source.height || source.naturalHeight;
+      var scale = Math.min(1, 1600 / Math.max(sw, sh));
+      var width = Math.max(1, Math.round(sw * scale));
+      var height = Math.max(1, Math.round(sh * scale));
+      var canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      var ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, width, height);
+      ctx.drawImage(source, 0, 0, width, height);
+      if (closable && source.close) source.close();
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      var quality = 0.82;
+      var blob = await canvasToBlob(canvas, quality);
+      if (!blob) {
+        var noBlob = new Error("format");
+        noBlob.code = "format";
+        throw noBlob;
+      }
+      while (blob.size > 1200000 && quality > 0.5) {
+        quality = Math.round((quality - 0.1) * 10) / 10;
+        blob = await canvasToBlob(canvas, quality);
+      }
+      var dataUrl = await blobToDataUrl(blob);
+      return {
+        dataUrl: dataUrl,
+        base64: String(dataUrl).split(",")[1],
+        width: width,
+        height: height,
+        bytes: blob.size,
+        mimeType: "image/jpeg"
+      };
+    }
+
+    function japaneseDate(date) {
+      try {
+        return new Intl.DateTimeFormat("ja-JP-u-ca-japanese", {
+          era: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric"
+        }).format(date);
+      } catch (e) {
+        return date.getFullYear() + "年" + (date.getMonth() + 1) + "月" + date.getDate() + "日";
+      }
+    }
+
+    function show(name) {
+      ["home", "settings", "loading", "result"].forEach(function (id) {
+        $("screen-" + id).hidden = id !== name;
+      });
+      if (name !== "loading") stopLoading();
+      if (name === "home") refreshKeyBanner();
+      var heading = document.querySelector("#screen-" + name + " h1");
+      if (heading) {
+        heading.tabIndex = -1;
+        try { heading.focus({ preventScroll: true }); }
+        catch (e) { heading.focus(); }
+      }
+      window.scrollTo(0, 0);
+    }
+
+    function refreshKeyBanner() {
+      var hasKey = !!readStoredKey();
+      $("keyBanner").hidden = hasKey;
+      $("keyReady").hidden = !hasKey;
+    }
+
+    function setMessage(id, text, ok) {
+      var node = $(id);
+      if (!text) {
+        node.hidden = true;
+        node.textContent = "";
+        node.classList.remove("ok");
+        return;
+      }
+      node.hidden = false;
+      node.textContent = text;
+      node.classList.toggle("ok", !!ok);
+      if (!ok) node.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+
+    function syncChoices(root) {
+      (root || document).querySelectorAll(".choice").forEach(function (label) {
+        var input = label.querySelector("input");
+        label.classList.toggle("is-selected", !!(input && input.checked));
+      });
+    }
+
+    function selectedValue(name) {
+      var input = document.querySelector("input[name='" + name + "']:checked");
+      return input ? input.value : "";
+    }
+
+    function readProfile() {
+      var age = normalizeDigits(clean($("ageInput").value, 3));
+      if (age && !/^\d{1,3}$/.test(age)) age = "";
+      if (age && (Number(age) < 1 || Number(age) > 120)) age = "";
+      return {
+        name: clean($("nameInput").value, 40),
+        age: age,
+        gender: selectedValue("gender")
+      };
+    }
+
+    function addParagraphs(parent, text) {
+      String(text || "").split(/\n+/).forEach(function (part) {
+        var trimmed = part.trim();
+        if (!trimmed) return;
+        parent.appendChild(el("p", "", trimmed));
+      });
+    }
+
+    function el(tag, className, text) {
+      var node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text != null) node.textContent = text;
+      return node;
+    }
+
+    function startLoading() {
+      var messages = [
+        "おもざしを拝見しています",
+        "三停と五官を見ています",
+        "言葉を整えています",
+        "もう少々、お待ちください"
+      ];
+      var index = 0;
+      $("loadingMessage").textContent = messages[0];
+      clearInterval(state.loadingTimer);
+      state.loadingTimer = setInterval(function () {
+        index = (index + 1) % messages.length;
+        $("loadingMessage").textContent = messages[index];
+      }, 4000);
+      show("loading");
+    }
+
+    function stopLoading() {
+      clearInterval(state.loadingTimer);
+      state.loadingTimer = null;
+    }
+
+    function failReading(info) {
+      if (state.abort) state.abort.abort();
+      state.abort = null;
+      var friendly = friendlyError(info);
+      show("home");
+      setMessage("formError", friendly.title + "。" + friendly.body);
+      var detail = info && info.message ? info.message : "";
+      if (detail && $("formError").textContent.indexOf(detail) === -1) {
+        var more = el("span", "");
+        more.textContent = "";
+        var details = document.createElement("details");
+        details.className = "more";
+        var summary = document.createElement("summary");
+        summary.textContent = "くわしい内容を見る";
+        details.appendChild(summary);
+        details.appendChild(el("p", "", detail.slice(0, 500)));
+        $("formError").appendChild(details);
+      }
+    }
+
+    async function requestReading(photo, profile) {
+      var req = buildGeminiRequest({
+        apiKey: readStoredKey(),
+        model: currentModel(),
+        base64: photo.base64,
+        mimeType: photo.mimeType,
+        profile: profile
+      });
+      var controller = new AbortController();
+      state.abort = controller;
+      state.cancelReason = "";
+      var timer = setTimeout(function () {
+        state.cancelReason = "timeout";
+        controller.abort();
+      }, 90000);
+      try {
+        var response = await fetch(req.url, {
+          method: req.method,
+          headers: req.headers,
+          body: JSON.stringify(req.body),
+          signal: controller.signal
+        });
+        var payload = null;
+        try { payload = await response.json(); }
+        catch (e) { payload = null; }
+        if (!response.ok) {
+          var info = readErrorInfo(payload, response.status);
+          var httpError = new Error("HTTP");
+          httpError.info = info;
+          throw httpError;
+        }
+        var text = extractModelText(payload);
+        return normalizeReading(parseModelJson(text));
+      } catch (error) {
+        if (error && error.name === "AbortError") {
+          if (state.cancelReason === "user") {
+            var cancelled = new Error("cancelled");
+            cancelled.code = "cancelled";
+            throw cancelled;
+          }
+          var timeout = new Error("timeout");
+          timeout.code = "timeout";
+          throw timeout;
+        }
+        if (error && error.info) throw error;
+        if (error && error.code) throw error;
+        if (error instanceof TypeError) {
+          var network = new Error("network");
+          network.code = "network";
+          throw network;
+        }
+        if (error instanceof SyntaxError) {
+          var bad = new Error("BAD_JSON");
+          bad.code = "BAD_JSON";
+          throw bad;
+        }
+        throw error;
+      } finally {
+        clearTimeout(timer);
+        if (state.abort === controller) state.abort = null;
+      }
+    }
+
+    async function onPickFile(file, input) {
+      setMessage("photoError", "");
+      setMessage("formError", "");
+      if (!file) return;
+      try {
+        var photo = await compressImageFile(file);
+        state.photo = photo;
+        $("photoEmpty").hidden = true;
+        $("photoPreview").hidden = false;
+        $("photoPreview").src = photo.dataUrl;
+        var note = "写真を整えました（長辺 " + Math.max(photo.width, photo.height) + "px）。この大きさで送ります。";
+        if (Math.max(photo.width, photo.height) < 500) {
+          note += " 少し小さいかもしれません。顔が大きく写ったものが向いています。";
+        }
+        $("photoMeta").textContent = note;
+      } catch (error) {
+        state.photo = null;
+        $("photoPreview").hidden = true;
+        $("photoPreview").removeAttribute("src");
+        $("photoEmpty").hidden = false;
+        setMessage("photoError", friendlyError({ code: "format" }).body);
+      } finally {
+        if (input) input.value = "";
+      }
+    }
+
+    function openSettings() {
+      $("apiKeyInput").value = readStoredKey();
+      $("modelInput").value = currentModel();
+      $("apiKeyInput").type = "password";
+      $("toggleKey").textContent = "表示";
+      state.clearArmed = false;
+      $("clearKey").textContent = "キーをこの端末から消す";
+      setMessage("settingsStatus", "");
+      show("settings");
+    }
+
+    function saveSettings() {
+      var key = $("apiKeyInput").value.trim();
+      var model = $("modelInput").value.trim() || DEFAULT_MODEL;
+      if (!key) {
+        setMessage("settingsStatus", "APIキーを貼り付けてから、保存してください。");
+        return;
+      }
+      if (/\s/.test(key)) {
+        setMessage("settingsStatus", "キーの途中に空白が入っています。もう一度、貼り付けてください。");
+        return;
+      }
+      if (key.length < 20) {
+        setMessage("settingsStatus", "キーが短すぎるようです。表示されたキーを、すべてコピーしてください。");
+        return;
+      }
+      if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{1,80}$/.test(model)) {
+        setMessage("settingsStatus", "モデル名の形が違うようです。" + DEFAULT_MODEL + " のように入れてください。");
+        return;
+      }
+      localStorage.setItem(STORAGE_KEY, key);
+      if (model === DEFAULT_MODEL) localStorage.removeItem(STORAGE_MODEL);
+      else localStorage.setItem(STORAGE_MODEL, model);
+      $("modelInput").value = model;
+      setMessage("settingsStatus", "保存しました。この端末の中だけに残しています。", true);
+      state.clearArmed = false;
+      $("clearKey").textContent = "キーをこの端末から消す";
+    }
+
+    function clearKey() {
+      if (!state.clearArmed) {
+        state.clearArmed = true;
+        $("clearKey").textContent = "本当に消す";
+        setMessage("settingsStatus", "もう一度押すと、この端末からキーを消します。");
+        return;
+      }
+      localStorage.removeItem(STORAGE_KEY);
+      $("apiKeyInput").value = "";
+      state.clearArmed = false;
+      $("clearKey").textContent = "キーをこの端末から消す";
+      setMessage("settingsStatus", "キーを消しました。", true);
+    }
+
+    function asList(value, max) {
+      if (!Array.isArray(value)) return [];
+      return value.map(asText).filter(Boolean).slice(0, max || 6);
+    }
+
+    function asPart(value) {
+      var part = value || {};
+      return { seen: asText(part.seen), reading: asText(part.reading) };
+    }
+
+    function asFeature(value) {
+      var f = value || {};
+      return {
+        visible: f.visible === true || f.visible === "true",
+        seen: asText(f.seen),
+        reading: asText(f.reading)
+      };
+    }
+
+    function normalizeReading(raw) {
+      if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+        var bad = new Error("BAD_JSON");
+        bad.code = "BAD_JSON";
+        throw bad;
+      }
+      var santei = raw.santei || {};
+      var gokan = raw.gokan || {};
+      var shape = raw.faceShape || {};
+      var element = asText(shape.element).charAt(0);
+      var seenNames = {};
+      var palaces = Array.isArray(raw.palaces) ? raw.palaces.map(function (p) {
+        return { name: asText(p && p.name), seen: asText(p && p.seen), reading: asText(p && p.reading) };
+      }).filter(function (p) {
+        if (!PALACES[p.name] || seenNames[p.name]) return false;
+        if (!p.seen && !p.reading) return false;
+        seenNames[p.name] = true;
+        return true;
+      }).slice(0, 5) : [];
+      var seenParts = {};
+      var commonViews = Array.isArray(raw.commonViews) ? raw.commonViews.map(function (c) {
+        return { part: asText(c && c.part), seen: asText(c && c.seen), reading: asText(c && c.reading) };
+      }).filter(function (c) {
+        if (COMMON_PARTS.indexOf(c.part) < 0 || seenParts[c.part]) return false;
+        if (!c.reading) return false;
+        seenParts[c.part] = true;
+        return true;
+      }).slice(0, 4) : [];
+      var reading = {
+        isFace: raw.isFace === true || raw.isFace === "true",
+        retakeMessage: asText(raw.retakeMessage),
+        summary: asText(raw.summary),
+        santei: { balance: asText(santei.balance) },
+        gokan: {},
+        palaces: palaces,
+        faceShape: {
+          element: ELEMENTS[element] ? element : "",
+          seen: asText(shape.seen),
+          reading: asText(shape.reading)
+        },
+        complexion: asPart(raw.complexion),
+        commonViews: commonViews,
+        strengths: asList(raw.strengths, 5),
+        cautions: asList(raw.cautions, 4),
+        luckTips: asList(raw.luckTips, 5)
+      };
+      SANTEI_FIELDS.forEach(function (f) { reading.santei[f[0]] = asPart(santei[f[0]]); });
+      GOKAN_FIELDS.forEach(function (f) { reading.gokan[f[0]] = asFeature(gokan[f[0]]); });
+      // 中身が空なのに「顔です」と返ってきたときは、鑑定せず撮り直しにする。
+      if (reading.isFace && !reading.summary && !reading.santei.upper.seen && !reading.gokan.eyes.seen) {
+        reading.isFace = false;
+      }
+      return reading;
+    }
+
+    // 見本用のイラスト。実在の人物ではありません。
+    function sampleFaceDataUrl() {
+      var svg = [
+        "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 760'>",
+        "<rect width='640' height='760' fill='#f4eadc'/>",
+        "<path d='M150 300c0-150 80-220 170-220s170 70 170 220' fill='#5c4638'/>",
+        "<g fill='#f4d2bf' stroke='#6b4a3a' stroke-width='7' stroke-linejoin='round'>",
+        "<ellipse cx='150' cy='380' rx='30' ry='58'/>",
+        "<ellipse cx='490' cy='380' rx='30' ry='58'/>",
+        "<path d='M160 300c0-120 70-178 160-178s160 58 160 178v90c0 150-80 250-160 250s-160-100-160-250z'/>",
+        "</g>",
+        "<path d='M200 190c40-50 200-50 240 0' fill='none' stroke='#5c4638' stroke-width='22' stroke-linecap='round'/>",
+        "<g fill='none' stroke-linecap='round'>",
+        "<path d='M220 312q40-22 78-4M342 308q38-18 78 4' stroke='#4a382c' stroke-width='11'/>",
+        "<path d='M232 360q28-18 56 0M352 360q28-18 56 0' stroke='#4a382c' stroke-width='6'/>",
+        "<path d='M320 350v110q-6 18-26 20M320 460q6 18 26 20' stroke='#8a6a58' stroke-width='5'/>",
+        "<path d='M266 540q54 30 108 0' stroke='#8f3d32' stroke-width='8'/>",
+        "<path d='M200 230h240M208 260h224' stroke='#c4a882' stroke-width='2' stroke-dasharray='6 8'/>",
+        "</g>",
+        "<g fill='#4a382c'><circle cx='260' cy='364' r='9'/><circle cx='380' cy='364' r='9'/></g>",
+        "<g fill='#e9a99a' opacity='0.45'><ellipse cx='232' cy='450' rx='34' ry='18'/><ellipse cx='408' cy='450' rx='34' ry='18'/></g>",
+        "<g font-family='serif' font-size='22' fill='#8c3b30' text-anchor='start'>",
+        "<path d='M560 170v170M560 345v150M560 500v140' stroke='#8c3b30' stroke-width='3'/>",
+        "<text x='572' y='262'>上</text><text x='572' y='426'>中</text><text x='572' y='578'>下</text>",
+        "</g>",
+        "</svg>"
+      ].join("");
+      return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+    }
+
+    function sampleReading() {
+      return normalizeReading({
+        isFace: true,
+        retakeMessage: "",
+        summary: "額が広く、眉から鼻、口元までが穏やかにそろった、落ち着きのあるおもざしです。上停・中停・下停の釣り合いがよく、若い頃に学んだことを、働き盛りに形にし、晩年に人へ手渡していく流れが読み取れます。急がず、じっくり積み上げるほど味の出る相です。",
+        santei: {
+          upper: {
+            seen: "額は広めで、生え際がなだらかです。",
+            reading: "考える力と、目上の人から学ぶ縁に恵まれやすい傾向と読まれます。"
+          },
+          middle: {
+            seen: "眉から鼻先までがまっすぐ通り、鼻筋に張りがあります。",
+            reading: "自分で決めて動く力が、働き盛りに発揮されやすい相です。"
+          },
+          lower: {
+            seen: "顎はやわらかな丸みがあり、口元が締まっています。",
+            reading: "家庭や身近な人との縁を大切にし、晩年に落ち着きを得やすいと読まれます。"
+          },
+          balance: "三つの長さがほぼ同じで、伝統では「三停均等」として、人生の前半・中盤・後半に大きな偏りが出にくい相とされます。"
+        },
+        gokan: {
+          brows: { visible: true, seen: "眉は濃すぎず、目より少し長く、ゆるやかな弧を描いています。", reading: "気持ちを穏やかに表す方で、友人や兄弟との縁を長く保ちやすい傾向です。" },
+          eyes: { visible: true, seen: "目は切れ長で、黒目がはっきりしています。", reading: "物事をよく見て、落ち着いて判断する力があると読まれます。" },
+          nose: { visible: true, seen: "鼻筋が通り、小鼻にほどよい厚みがあります。", reading: "自分の足で立つ力と、お金を守る堅実さの相とされます。" },
+          mouth: { visible: true, seen: "口は大きすぎず、口角がわずかに上がっています。", reading: "言葉に信頼があり、人に安心を与える相です。" },
+          ears: { visible: true, seen: "耳は目の高さより少し上から始まり、耳たぶがふっくらしています。", reading: "人の話をよく聞き、生まれ持った穏やかさがある、と読まれます。" }
+        },
+        palaces: [
+          { name: "官禄宮", seen: "額の中央が広く、なめらかです。", reading: "仕事での信用を積み上げやすい相です。役目を任されるほど力が出るでしょう。" },
+          { name: "命宮", seen: "眉と眉のあいだが指一本半ほど開き、明るく見えます。", reading: "心にゆとりがあり、人を受け入れる器の広さがあると読まれます。" },
+          { name: "財帛宮", seen: "鼻先が丸く、小鼻が張っています。", reading: "入ったものを大切に守る、堅実なお金の使い方と相性がよい傾向です。" },
+          { name: "田宅宮", seen: "眉と目のあいだにゆとりがあります。", reading: "住まいや土地との縁が穏やかで、家を整えることが運の土台になりやすいと読まれます。" }
+        ],
+        faceShape: {
+          element: "土",
+          seen: "輪郭に厚みがあり、頬から顎にかけてどっしりとしています。",
+          reading: "土形の人は、誠実で粘り強く、まわりから頼られやすいとされます。一度決めたことをこつこつ続ける力が持ち味です。"
+        },
+        complexion: {
+          seen: "額と頬に明るさがあり、つやも見えます（照明の影響もあります）。",
+          reading: "伝統では、明るい血色は物事が進みやすい時期のしるしと読まれます。"
+        },
+        commonViews: [
+          { part: "口", seen: "口角がわずかに上がり、口元が締まっています。", reading: "口角が上がっていることは、多くの観相家が何より大切にする開運のしるしです。締まった口元は、しっかりした気持ちの表れと読まれます。" },
+          { part: "眉間", seen: "眉と眉のあいだが広く開き、明るく見えます。", reading: "心にゆとりがあり、人を受け入れやすい相と読まれます。いまの穏やかな表情を続けると、この良さがさらに育ちます。" },
+          { part: "額・三停", seen: "額が広く、髪で隠れずに出ています。", reading: "額を出していると明るく開いた印象になり、運も開きやすいとされます。考える力・学ぶ力のしるしでもあります。" }
+        ],
+        strengths: [
+          "落ち着いた判断力と、人に安心を与える雰囲気",
+          "決めたことを長く続ける粘り強さ",
+          "住まいや仕事の土台を整える力"
+        ],
+        cautions: [
+          "まじめさゆえに、ひとりで抱え込みやすいかもしれません。早めに人を頼ると楽になります。",
+          "慎重なぶん、決めるまでに時間がかかることがあります。小さく試すのも一つの手です。"
+        ],
+        luckTips: [
+          "朝、鏡の前で口角を上げてから出かける（いつもの表情が、顔つきを育てます）",
+          "眉間に力が入ったと気づいたら、ふっとゆるめる",
+          "眉を整え、額を出す髪型にすると、明るい印象が増します",
+          "よく眠り、顔の血色を整える"
+        ],
+        disclaimer: DISCLAIMER
+      });
+    }
+
+    function addLabeled(parent, label, text) {
+      if (!text) return;
+      parent.appendChild(el("p", "label", label));
+      addParagraphs(parent, text);
+    }
+
+    function addList(parent, className, items) {
+      var list = el("ul", className);
+      items.forEach(function (item) { list.appendChild(el("li", "", item)); });
+      parent.appendChild(list);
+    }
+
+    function renderReading(view) {
+      state.lastView = view;
+      var r = view.reading;
+      var sheet = $("resultSheet");
+      sheet.textContent = "";
+      var head = el("header", "sheet-head");
+      head.appendChild(el("div", "seal", "相"));
+      head.appendChild(el("p", "sheet-kicker", "顔相"));
+      head.appendChild(el("h1", "", "鑑定書"));
+      head.appendChild(el("p", "sheet-date", japaneseDate(view.date || new Date())));
+      var whoBits = [];
+      whoBits.push(view.sample ? "見本" : (view.profile.name || "名前記入なし"));
+      if (!view.sample && view.profile.age) whoBits.push(view.profile.age + "歳");
+      if (!view.sample && view.profile.gender && view.profile.gender !== "答えない") whoBits.push(view.profile.gender);
+      head.appendChild(el("p", "who", whoBits.join("　")));
+      sheet.appendChild(head);
+
+      var figure = el("figure");
+      var img = el("img", "face-photo");
+      img.src = view.photoUrl;
+      img.alt = view.sample ? "見本用の顔のイラスト" : "鑑定した顔の写真";
+      figure.appendChild(img);
+      figure.appendChild(el("figcaption", "", view.sample ? "イラスト（見本）" : "鑑定に使った写真"));
+      sheet.appendChild(figure);
+
+      if (view.sample) {
+        sheet.appendChild(el("p", "sample-flag", "これは見本です。イラストをもとにした、読み方の例です。実在の方の顔相ではありません。"));
+      }
+
+      if (!r.isFace) {
+        var retake = el("section", "block");
+        retake.appendChild(el("h2", "", "もう一度、撮ってみてください"));
+        addParagraphs(retake, r.retakeMessage || "顔として、はっきり見えませんでした。明るい場所で、もう一度お願いします。");
+        addList(retake, "tips", [
+          "明るい所で撮る（窓のそばが向いています）",
+          "前髪を上げて、額を出す",
+          "眼鏡やマスクを外す",
+          "真正面から、顔全体と耳まで入れる",
+          "ひとりだけで写る"
+        ]);
+        sheet.appendChild(retake);
+        sheet.appendChild(el("p", "endnote", DISCLAIMER));
+        show("result");
+        return;
+      }
+
+      var summary = el("section", "block");
+      summary.appendChild(el("h2", "", "総評"));
+      addParagraphs(summary, r.summary);
+      sheet.appendChild(summary);
+
+      var santei = el("section", "block");
+      santei.appendChild(el("h2", "", "三停"));
+      SANTEI_FIELDS.forEach(function (f) {
+        var part = r.santei[f[0]];
+        var row = el("div", "santei-row");
+        var tag = el("div", "tag", f[1]);
+        tag.appendChild(el("small", "", f[2]));
+        row.appendChild(tag);
+        var body = el("div");
+        body.appendChild(el("p", "place", f[3]));
+        if (part.seen) body.appendChild(el("p", "", part.seen));
+        if (part.reading) body.appendChild(el("p", "", part.reading));
+        if (!part.seen && !part.reading) body.appendChild(el("p", "", "この写真では、はっきり見えませんでした。"));
+        row.appendChild(body);
+        santei.appendChild(row);
+      });
+      addLabeled(santei, "釣り合い", r.santei.balance);
+      sheet.appendChild(santei);
+
+      var gokan = el("section", "block");
+      gokan.appendChild(el("h2", "", "五官"));
+      GOKAN_FIELDS.forEach(function (f) {
+        var feat = r.gokan[f[0]];
+        var card = el("section", "line-card");
+        card.appendChild(el("h3", "", f[1] + "（" + f[2] + "）"));
+        card.appendChild(el("p", "about", f[3]));
+        if (!feat.visible) {
+          card.appendChild(el("p", "absent", feat.seen || "この写真では、はっきり見えませんでした。見えないことを、悪い印にはしません。"));
+        } else {
+          addLabeled(card, "見えたこと", feat.seen);
+          addLabeled(card, "読み", feat.reading);
+        }
+        gokan.appendChild(card);
+      });
+      sheet.appendChild(gokan);
+
+      if (r.palaces.length) {
+        var palaces = el("section", "block");
+        palaces.appendChild(el("h2", "", "十二宮から目立つところ"));
+        r.palaces.forEach(function (p) {
+          var card = el("section", "line-card");
+          card.appendChild(el("h3", "", p.name));
+          card.appendChild(el("p", "about", PALACES[p.name]));
+          if (p.seen) addParagraphs(card, p.seen);
+          addLabeled(card, "読み", p.reading);
+          palaces.appendChild(card);
+        });
+        sheet.appendChild(palaces);
+      }
+
+      var shape = el("section", "block");
+      shape.appendChild(el("h2", "", "顔の形（五行）"));
+      if (r.faceShape.element) {
+        var badge = el("p", "element-badge");
+        badge.appendChild(el("span", "kanji", r.faceShape.element));
+        badge.appendChild(el("span", "", ELEMENTS[r.faceShape.element]));
+        shape.appendChild(badge);
+      }
+      addLabeled(shape, "見えたこと", r.faceShape.seen);
+      addLabeled(shape, "読み", r.faceShape.reading);
+      sheet.appendChild(shape);
+
+      if (r.complexion.seen || r.complexion.reading) {
+        var color = el("section", "block");
+        color.appendChild(el("h2", "", "血色"));
+        color.appendChild(el("p", "quiet", "照明や化粧、カメラで変わります。参考程度にご覧ください。"));
+        addLabeled(color, "見えたこと", r.complexion.seen);
+        addLabeled(color, "読み", r.complexion.reading);
+        sheet.appendChild(color);
+      }
+
+      if (r.commonViews.length) {
+        var common = el("section", "block");
+        common.appendChild(el("h2", "", "観相家の共通の見方"));
+        common.appendChild(el("p", "quiet", "複数の観相家が共通して説いている見方に沿って、この写真で目立つところを読みました。"));
+        r.commonViews.forEach(function (c) {
+          var card = el("section", "line-card");
+          card.appendChild(el("h3", "", c.part));
+          addLabeled(card, "見えたこと", c.seen);
+          addLabeled(card, "読み", c.reading);
+          common.appendChild(card);
+        });
+        common.appendChild(el("p", "quiet", "どの観相家も、顔は表情や暮らし方の積み重ねで変わっていくもの、と説いています。"));
+        sheet.appendChild(common);
+      }
+
+      if (r.strengths.length || r.cautions.length) {
+        var gc = el("section", "block");
+        gc.appendChild(el("h2", "", "よいところと、気をつけたいところ"));
+        if (r.strengths.length) {
+          gc.appendChild(el("h3", "", "よいところ"));
+          addList(gc, "good-list", r.strengths);
+        }
+        if (r.cautions.length) {
+          gc.appendChild(el("h3", "", "気をつけたいところ"));
+          addList(gc, "care-list", r.cautions);
+        }
+        sheet.appendChild(gc);
+      }
+
+      if (r.luckTips.length) {
+        var luck = el("section", "block");
+        luck.appendChild(el("h2", "", "開運のヒント"));
+        luck.appendChild(el("p", "quiet", "顔は、表情や生き方で変わっていきます。小さな習慣から始めてみてください。"));
+        addList(luck, "luck-list", r.luckTips);
+        sheet.appendChild(luck);
+      }
+
+      sheet.appendChild(el("p", "endnote", DISCLAIMER));
+      show("result");
+    }
+
+    function fileStamp(date) {
+      var d = date || new Date();
+      function two(n) { return (n < 10 ? "0" : "") + n; }
+      return d.getFullYear() + two(d.getMonth() + 1) + two(d.getDate());
+    }
+
+    // 鑑定書だけを、1つのHTMLファイルにして保存します（スクリプトは入れません）。
+    function buildSavedHtml() {
+      var css = document.querySelector("style").textContent;
+      var sheet = $("resultSheet").outerHTML;
+      return [
+        "<!DOCTYPE html>",
+        "<html lang=\"ja\"><head><meta charset=\"utf-8\">",
+        "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">",
+        "<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; img-src data:; style-src 'unsafe-inline'\">",
+        "<title>顔相 鑑定書</title><style>" + css + "</style></head>",
+        "<body><div class=\"wrap\"><div class=\"sheet-frame\">" + sheet + "</div></div></body></html>"
+      ].join("\n");
+    }
+
+    function saveHtml() {
+      var blob = new Blob([buildSavedHtml()], { type: "text/html;charset=utf-8" });
+      var url = URL.createObjectURL(blob);
+      var link = document.createElement("a");
+      link.href = url;
+      link.download = "顔相鑑定書_" + fileStamp(state.lastView && state.lastView.date) + ".html";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+    }
+
+    function showSample() {
+      setMessage("formError", "");
+      renderReading({
+        reading: sampleReading(),
+        profile: { name: "", age: "", gender: "" },
+        photoUrl: sampleFaceDataUrl(),
+        sample: true,
+        date: new Date()
+      });
+    }
+
+    async function onSubmit(event) {
+      event.preventDefault();
+      setMessage("formError", "");
+      setMessage("photoError", "");
+      if (!state.photo) {
+        setMessage("formError", "顔の写真を、先に選んでください。");
+        return;
+      }
+      var ageRaw = normalizeDigits(clean($("ageInput").value, 3));
+      if (ageRaw && !/^\d{1,3}$/.test(ageRaw)) {
+        setMessage("formError", "年齢は、数字だけで入れてください。空欄でも大丈夫です。");
+        return;
+      }
+      if (ageRaw && (Number(ageRaw) < 1 || Number(ageRaw) > 120)) {
+        setMessage("formError", "年齢は、1から120のあいだで入れてください。空欄でも大丈夫です。");
+        return;
+      }
+      if (!readStoredKey()) {
+        setMessage("formError", "先に設定で、APIキーを保存してください。");
+        return;
+      }
+      var profile = readProfile();
+      startLoading();
+      try {
+        var reading = await requestReading(state.photo, profile);
+        renderReading({
+          reading: reading,
+          profile: profile,
+          photoUrl: state.photo.dataUrl,
+          sample: false,
+          date: new Date()
+        });
+      } catch (error) {
+        if (error && error.code === "cancelled") return;
+        if (error && error.info) failReading(error.info);
+        else failReading({ code: error && error.code ? error.code : "network", message: error && error.message });
+      }
+    }
+
+    var PHOTO_HINT = "額から顎まで、耳も入るように。表情は自然なままで大丈夫です。";
+
+    document.querySelectorAll(".choice input").forEach(function (input) {
+      input.addEventListener("change", function () { syncChoices(); });
+    });
+
+    $("cameraInput").addEventListener("change", function () {
+      onPickFile($("cameraInput").files && $("cameraInput").files[0], $("cameraInput"));
+    });
+    $("fileInput").addEventListener("change", function () {
+      onPickFile($("fileInput").files && $("fileInput").files[0], $("fileInput"));
+    });
+    $("readForm").addEventListener("submit", onSubmit);
+    $("sampleBtn").addEventListener("click", showSample);
+    $("openSettings").addEventListener("click", openSettings);
+    $("openSettingsBanner").addEventListener("click", openSettings);
+    $("backFromSettings").addEventListener("click", function () { show("home"); });
+    $("settingsForm").addEventListener("submit", function (event) {
+      event.preventDefault();
+      saveSettings();
+    });
+    $("clearKey").addEventListener("click", clearKey);
+    $("resetModel").addEventListener("click", function () {
+      $("modelInput").value = DEFAULT_MODEL;
+      setMessage("settingsStatus", "最初のモデル名に戻しました。よければ「保存する」を押してください。");
+    });
+    $("toggleKey").addEventListener("click", function () {
+      var hidden = $("apiKeyInput").type === "password";
+      $("apiKeyInput").type = hidden ? "text" : "password";
+      $("toggleKey").textContent = hidden ? "隠す" : "表示";
+    });
+    $("cancelLoading").addEventListener("click", function () {
+      state.cancelReason = "user";
+      if (state.abort) state.abort.abort();
+      show("home");
+      setMessage("formError", "鑑定をやめました。写真はそのまま残してあります。");
+    });
+    $("saveHtmlBtn").addEventListener("click", saveHtml);
+    $("printBtn").addEventListener("click", function () { window.print(); });
+    $("restartBtn").addEventListener("click", function () {
+      state.photo = null;
+      $("photoPreview").hidden = true;
+      $("photoPreview").removeAttribute("src");
+      $("photoEmpty").hidden = false;
+      $("photoMeta").textContent = PHOTO_HINT;
+      setMessage("formError", "");
+      setMessage("photoError", "");
+      show("home");
+    });
+
+    refreshKeyBanner();
+    syncChoices();
+    // アドレスの最後に #sample を付けると、見本の鑑定書を開きます（通信しません）。
+    if (location.hash === "#sample") showSample();
+
+    window.Gansou = {
+      DEFAULT_MODEL: DEFAULT_MODEL,
+      DISCLAIMER: DISCLAIMER,
+      buildGeminiRequest: buildGeminiRequest,
+      extractModelText: extractModelText,
+      parseModelJson: parseModelJson,
+      normalizeReading: normalizeReading,
+      friendlyError: friendlyError,
+      readErrorInfo: readErrorInfo,
+      compressImageFile: compressImageFile,
+      sampleReading: sampleReading,
+      buildPrompt: buildPrompt,
+      COMMON_GUIDE: COMMON_GUIDE,
+      buildSavedHtml: buildSavedHtml
+    };
+  </script>
+<!-- 占いの入口とのつなぎ（2026-11-18 みこ追加） -->
+<script>
+/**
+ * 占いの入口とのつなぎ（2026-11-18 みこ追加・同日「ほかの占いへ直接行ける帯」に変更）。
+ * 1 画面のいちばん上に、入口とほかの占いへの帯を出す（印刷・PDFには出ない）。
+ *   押した時に、いまの画面に入っている生年月日・名前・性別を読んで、行き先のアドレスに付ける。
+ * 2 アドレスで渡された内容（?y=2000&m=1&d=1&time=12:00&gender=男&name=…&roma=…）を入力欄に入れる。
+ * このファイルが無くても、各アプリは元のまま動く。入力はどこにも送らず、保存もしない。
+ * 顔相・手相は外のファイルを読めない作りなので、この中身をそのままページの中に写してある（直したら両方）。
+ */
+(function () {
+  'use strict';
+  var q = new URLSearchParams(location.search);
+  var $ = function (id) { return document.getElementById(id); };
+  var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+  var APPS = [
+    ['hub', '入口', '../index.html'],
+    ['shichu', '四柱推命', 'https://wandererharu-sudo.github.io/shichusuimei/'],
+    ['ziwei', '紫微斗数', '../紫微斗数アプリ/index.html'],
+    ['suuhi', '数秘術', '../数秘術アプリ/index.html'],
+    ['takujitsu', '擇日', '../擇日アプリ/index.html'],
+    ['eki', '易', '../易アプリ/index.html'],
+    ['gansou', '顔相', '../顔相アプリ/index.html'],
+    ['tesou', '手相', '../手相アプリ/index.html']
+  ];
+  var here = '';
+  try { here = decodeURIComponent(location.pathname); } catch (e) { here = location.pathname; }
+  function isHere(a) { return a[0] !== 'hub' && a[0] !== 'shichu' && here.indexOf(a[1] + 'アプリ') >= 0; }
+
+  // 時刻（06:45）→ 紫微斗数の時辰の番号
+  function hourOf(t) {
+    if (!t || !/^\d{1,2}:\d{2}$/.test(t)) return '';
+    var hh = +t.split(':')[0];
+    return hh === 23 ? 'late' : String(Math.floor(((hh + 1) % 24) / 2));
+  }
+
+  // いまの画面の入力を読む（無い項目は、アドレスで渡された内容のまま）
+  function collect() {
+    var o = { y: q.get('y') || '', m: q.get('m') || '', d: q.get('d') || '', time: q.get('time') || '',
+      hour: q.get('hour') || '', gender: q.get('gender') || '', name: q.get('name') || '', roma: q.get('roma') || '' };
+    function setDate(y, m, d) {
+      if (!y || !m || !d) return;
+      if (+y !== +o.y || +m !== +o.m || +d !== +o.d) { o.time = ''; o.hour = ''; }  // 別の人の日付なら時刻は持ち越さない
+      o.y = String(+y); o.m = String(+m); o.d = String(+d);
+    }
+    try {
+      // 紫微斗数（命盤を出した後だけ読む。出す前は見本の値が入っているため）
+      if ($('era') && $('year') && $('month') && $('day') && $('hour') && $('result') && !$('result').hidden) {
+        setDate(+$('era').value + +$('year').value, $('month').value, $('day').value);
+        var hv = $('hour').value;
+        if (hv !== hourOf(o.time)) { o.time = ''; o.hour = hv; }
+        if ($('gender') && $('gender').value) o.gender = $('gender').value;
+        if ($('name') && $('name').value.trim()) o.name = $('name').value.trim();
+      }
+      // 数秘術
+      if ($('by') && $('bm') && $('bd')) {
+        setDate($('by').value, $('bm').value, $('bd').value);
+        if ($('nm') && $('nm').value.trim()) o.roma = $('nm').value.trim();
+      }
+      // 擇日
+      if ($('birth') && $('picker')) {
+        var b = /^(\d{4})-(\d{2})-(\d{2})$/.exec($('birth').value || '');
+        if (b) setDate(b[1], b[2], b[3]);
+        var gv = $('gender') && $('gender').value;
+        if (gv === 'male' || gv === 'female') o.gender = gv === 'female' ? '女' : '男';
+      }
+      // 顔相・手相
+      if ($('nameInput')) {
+        if ($('nameInput').value.trim()) o.name = $('nameInput').value.trim();
+        var r = document.querySelector('input[name="gender"]:checked');
+        if (r && (r.value === '男性' || r.value === '女性')) o.gender = r.value === '女性' ? '女' : '男';
+      }
+    } catch (e) {}
+    return o;
+  }
+
+  function urlFor(a) {
+    var o = collect(), p = new URLSearchParams(), has = o.y && o.m && o.d;
+    if (a[0] === 'shichu') {  // 公開版の四柱推命は項目の名前が違う
+      if (o.name) p.set('name', o.name);
+      if (has) { p.set('year', o.y); p.set('month', o.m); p.set('day', o.d); }
+      if (o.gender) p.set('gender', o.gender === '女' ? 'female' : 'male');
+      if (o.time) p.set('time', o.time);
+    } else {
+      if (has) { p.set('y', o.y); p.set('m', o.m); p.set('d', o.d); }
+      if (o.time) p.set('time', o.time);
+      else if (o.hour) p.set('hour', o.hour);
+      if (o.gender) p.set('gender', o.gender);
+      if (o.name) p.set('name', o.name);
+      if (o.roma) p.set('roma', o.roma);
+    }
+    var s = p.toString();
+    return a[2] + (s ? '?' + s : '');
+  }
+
+  // 1 帯
+  var st = document.createElement('style');
+  st.textContent = '#hub-bar{position:relative;z-index:60;background:#2f3b36;color:#cfd8d3;padding:6px 12px;' +
+    'font:14px/1.6 "Yu Gothic UI","Hiragino Sans",sans-serif;text-align:left;display:flex;flex-wrap:wrap;gap:2px 6px;align-items:center}' +
+    '#hub-bar a{color:#fff;text-decoration:none;padding:2px 8px;border-radius:4px;white-space:nowrap}' +
+    '#hub-bar a:hover{background:#4a5a53}' +
+    '#hub-bar b{color:#2f3b36;background:#e9efe9;padding:2px 8px;border-radius:4px;white-space:nowrap}' +
+    '#hub-bar span{font-size:12px;margin-right:2px}' +
+    '@media print{#hub-bar{display:none !important}}';
+  document.head.appendChild(st);
+  var bar = document.createElement('div');
+  bar.id = 'hub-bar';
+  var lab = document.createElement('span');
+  lab.textContent = '同じ生年月日で見る：';
+  var links = [];
+  APPS.forEach(function (a, i) {
+    var el;
+    if (isHere(a)) { el = document.createElement('b'); el.textContent = a[1]; }
+    else {
+      el = document.createElement('a');
+      el.textContent = a[0] === 'hub' ? '← 入口' : a[1];
+      if (a[0] === 'shichu') { el.target = '_blank'; el.rel = 'noopener'; el.title = 'ネットの公開版が別の窓で開きます'; }
+      links.push([el, a]);
+    }
+    bar.appendChild(el);
+    if (i === 0) bar.appendChild(lab);
+  });
+  function refresh() { links.forEach(function (x) { x[0].href = urlFor(x[1]); }); }
+  refresh();
+  ['pointerdown', 'mouseover', 'focusin', 'touchstart', 'contextmenu'].forEach(function (ev) {
+    bar.addEventListener(ev, refresh, true);
+  });
+  bar.addEventListener('click', refresh, true);  // 押した瞬間の入力で行き先を決める
+  document.body.insertBefore(bar, document.body.firstChild);
+
+  // 2 渡された内容を入力欄へ入れる
+  var y = +q.get('y'), m = +q.get('m'), d = +q.get('d');
+  var gender = q.get('gender') || '', roma = q.get('roma') || '', name = q.get('name') || '';
+  try {
+    // 顔相・手相（名前・満年齢・性別）
+    if ($('nameInput')) {
+      if (name && !$('nameInput').value) $('nameInput').value = name.slice(0, 40);
+      var ai = $('ageInput');
+      if (y && m && d && ai && !ai.value) {
+        var n = new Date(), age = n.getFullYear() - y - ((n.getMonth() + 1 < m || (n.getMonth() + 1 === m && n.getDate() < d)) ? 1 : 0);
+        if (age >= 0 && age < 130) ai.value = String(age);
+      }
+      if (gender === '男' || gender === '女') {
+        var rr = document.querySelector('input[name="gender"][value="' + (gender === '男' ? '男性' : '女性') + '"]');
+        if (rr) rr.checked = true;
+      }
+    }
+    if (!y || !m || !d) return;
+    // 数秘術
+    if ($('by') && $('bm') && $('bd') && $('btn-go')) {
+      $('by').value = String(y);
+      $('bm').value = String(m);
+      if (typeof $('bm').onchange === 'function') $('bm').onchange();
+      $('bd').value = String(d);
+      if (roma && $('nm')) $('nm').value = roma.slice(0, 60);
+      $('btn-go').click();
+    }
+    // 擇日
+    if ($('birth') && $('picker')) {
+      $('birth').value = y + '-' + pad(m) + '-' + pad(d);
+      if ($('gender')) $('gender').value = gender === '女' ? 'female' : gender === '男' ? 'male' : '';
+      $('birth').dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  } catch (e) { /* 入れられなくても、アプリはそのまま使える */ }
+})();
+</script>
+</body>
+</html>
