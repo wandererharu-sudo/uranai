@@ -250,6 +250,10 @@
     }
 
     .btn:disabled { opacity: 0.55; cursor: default; }
+    .history-row { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.6rem; }
+    .history-open { flex: 1; display: flex; align-items: center; gap: 0.6rem; text-align: left; justify-content: flex-start; }
+    .history-thumb { width: 44px; height: 44px; object-fit: cover; border-radius: 6px; flex: none; }
+    .history-del { width: auto; flex: none; }
 
     .stack { display: grid; gap: 0.65rem; }
 
@@ -566,7 +570,7 @@
 
         <section class="card">
           <h2>よろしければ</h2>
-          <p class="quiet">空欄のままでも鑑定できます。名前は、この端末にも残しません。</p>
+          <p class="quiet">空欄のままでも鑑定できます。呼び名を入れると「これまでの鑑定」に誰の手相か残ります（この端末の中だけ）。</p>
           <label class="field">呼び名
             <input type="text" id="nameInput" name="name" maxlength="40" autocomplete="nickname" placeholder="例）はる">
           </label>
@@ -591,7 +595,13 @@
         </div>
       </form>
 
-      <p class="hint" style="margin-top: 1.1rem">写真は鑑定のためにGeminiへ送るだけで、このアプリには保存しません。アクセスの記録も取りません。</p>
+      <section class="card" id="historyCard" style="margin-top: 1.2rem" hidden>
+        <h2>これまでの鑑定</h2>
+        <p class="quiet">この端末の中だけに残しています。押すと鑑定書を開きます。</p>
+        <div id="historyList"></div>
+      </section>
+
+      <p class="hint" style="margin-top: 1.1rem">写真は鑑定のためにGeminiへ送ります。写真・呼び名・鑑定書は、この端末の中（ブラウザ）にだけ残し、ほかへは送りません。アクセスの記録も取りません。</p>
     </main>
 
     <main id="screen-settings" hidden>
@@ -1551,6 +1561,7 @@
           note += " 少し小さいかもしれません。手のひらが大きく写ったものが向いています。";
         }
         $("photoMeta").textContent = note;
+        saveDraft();
       } catch (error) {
         state.photo = null;
         $("photoPreview").hidden = true;
@@ -1659,13 +1670,15 @@
       startLoading();
       try {
         var reading = await requestReading(state.photo, profile);
+        var when = new Date();
         renderReading({
           reading: reading,
           profile: profile,
           photoUrl: state.photo.dataUrl,
           sample: false,
-          date: new Date()
+          date: when
         });
+        addHistory({ reading: reading, profile: profile, photoUrl: state.photo.dataUrl, date: when.getTime() });
       } catch (error) {
         if (error && error.code === "cancelled") return;
         if (error && error.info) failReading(error.info);
@@ -1717,8 +1730,109 @@
       $("photoMeta").textContent = "明るい場所で、手のひら全体を。指は少し開いてください。";
       setMessage("formError", "");
       setMessage("photoError", "");
+      clearDraft();
       show("home");
     });
+
+    // ===== 写真と入力を残す（下書き）・これまでの鑑定（2026-11-25 みこ追加） =====
+    // ほかの画面・ほかの占いへ行っても、写真と入力が消えないように、この端末の IndexedDB に残す。
+    // 「はじめから」で下書きは消える。鑑定できたものは「これまでの鑑定」に呼び名つきで残る。
+    var DB_NAME = "tesou_app", DB_VER = 1;
+    function openDb() {
+      return new Promise(function (resolve, reject) {
+        if (!window.indexedDB) { reject(new Error("no idb")); return; }
+        var r = indexedDB.open(DB_NAME, DB_VER);
+        r.onupgradeneeded = function () {
+          var db = r.result;
+          if (!db.objectStoreNames.contains("draft")) db.createObjectStore("draft");
+          if (!db.objectStoreNames.contains("history")) db.createObjectStore("history", { keyPath: "id", autoIncrement: true });
+        };
+        r.onsuccess = function () { resolve(r.result); };
+        r.onerror = function () { reject(r.error); };
+      });
+    }
+    function idb(store, mode, fn) {
+      return openDb().then(function (db) {
+        return new Promise(function (resolve, reject) {
+          var tx = db.transaction(store, mode);
+          var req = fn(tx.objectStore(store));
+          tx.oncomplete = function () { resolve(req && req.result); };
+          tx.onerror = function () { reject(tx.error); };
+        });
+      });
+    }
+    function saveDraft() {
+      var p = readProfile();
+      var d = { photo: state.photo, name: p.name, age: $("ageInput").value, gender: p.gender, hand: p.hand, dominant: p.dominant };
+      idb("draft", "readwrite", function (st) { return st.put(d, "cur"); }).catch(function () {});
+    }
+    function clearDraft() {
+      idb("draft", "readwrite", function (st) { return st.delete("cur"); }).catch(function () {});
+    }
+    function setRadio(name, value) {
+      if (!value) return;
+      var r = document.querySelector("input[name='" + name + "'][value='" + value + "']");
+      if (r) r.checked = true;
+    }
+    function restoreDraft() {
+      return idb("draft", "readonly", function (st) { return st.get("cur"); }).then(function (d) {
+        if (!d) return;
+        if (d.photo && d.photo.dataUrl && !state.photo) {
+          state.photo = d.photo;
+          $("photoEmpty").hidden = true;
+          $("photoPreview").hidden = false;
+          $("photoPreview").src = d.photo.dataUrl;
+          $("photoMeta").textContent = "前に選んだ写真を残してあります。別の写真にする時は、撮り直すか選び直してください。";
+        }
+        // 入口から渡された名前などがあれば、そちらを優先する（空欄の所だけ戻す）
+        if (d.name && !$("nameInput").value) $("nameInput").value = d.name;
+        if (d.age && !$("ageInput").value) $("ageInput").value = d.age;
+        if (!selectedValue("gender")) setRadio("gender", d.gender);
+        if (!selectedValue("hand")) setRadio("hand", d.hand);
+        if (!selectedValue("dominant")) setRadio("dominant", d.dominant);
+        syncChoices();
+      }).catch(function () {});
+    }
+    function addHistory(item) {
+      idb("history", "readwrite", function (st) { return st.add(item); })
+        .then(renderHistory).catch(function () {});
+    }
+    function renderHistory() {
+      return idb("history", "readonly", function (st) { return st.getAll(); }).then(function (rows) {
+        rows = (rows || []).sort(function (a, b) { return b.date - a.date; });
+        var list = $("historyList");
+        list.textContent = "";
+        $("historyCard").hidden = rows.length === 0;
+        rows.forEach(function (h) {
+          var row = el("div", "history-row");
+          var who = (h.profile && h.profile.name) ? h.profile.name + "さん" : "（呼び名なし）";
+          var open = el("button", "btn btn-secondary history-open");
+          open.type = "button";
+          if (h.photoUrl) {
+            var im = document.createElement("img");
+            im.src = h.photoUrl; im.alt = ""; im.className = "history-thumb";
+            open.appendChild(im);
+          }
+          open.appendChild(el("span", "", who + "・" + ((h.profile && h.profile.hand) || "") + "　" + japaneseDate(new Date(h.date))));
+          open.addEventListener("click", function () {
+            renderReading({ reading: h.reading, profile: h.profile, photoUrl: h.photoUrl, sample: false, date: new Date(h.date) });
+          });
+          var del = el("button", "btn btn-ghost history-del", "消す");
+          del.type = "button";
+          del.addEventListener("click", function () {
+            if (del.dataset.armed !== "1") { del.dataset.armed = "1"; del.textContent = "本当に消す"; return; }
+            idb("history", "readwrite", function (st) { return st.delete(h.id); }).then(renderHistory).catch(function () {});
+          });
+          row.appendChild(open);
+          row.appendChild(del);
+          list.appendChild(row);
+        });
+      }).catch(function () {});
+    }
+    ["nameInput", "ageInput"].forEach(function (id) { $(id).addEventListener("input", saveDraft); });
+    document.querySelectorAll("#readForm input[type='radio']").forEach(function (r) { r.addEventListener("change", saveDraft); });
+    // 入口から名前などが入るのを待ってから戻す
+    setTimeout(function () { restoreDraft(); renderHistory(); }, 300);
 
     refreshKeyBanner();
     syncChoices();
