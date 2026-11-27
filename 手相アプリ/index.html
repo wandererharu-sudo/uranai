@@ -390,13 +390,113 @@
       font-size: 1.08rem;
     }
 
+    /* 写真は読み進めても画面の上に留まる。線の説明を押すと、写真にその線を重ねる（2026-11-27 みこ追加） */
+    .palm-figure {
+      margin: 0;
+      text-align: center;
+    }
+
+    .palm-stage {
+      position: relative;
+      display: inline-block;
+      max-width: 100%;
+      line-height: 0;
+      vertical-align: top;
+    }
+
     .palm-photo {
-      width: 100%;
+      display: block;
+      width: auto;
+      height: auto;
+      max-width: 100%;
       max-height: 28rem;
-      object-fit: contain;
       background: #f6efe6;
       border-radius: 12px;
       border: 1px solid var(--line);
+    }
+
+    .palm-overlay {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .palm-overlay polyline {
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .palm-overlay .halo { stroke: #ffffff; stroke-width: 9; opacity: 0.9; }
+    .palm-overlay .mark { stroke: #e0261c; stroke-width: 4.5; }
+
+    .palm-tag {
+      position: absolute;
+      transform: translate(-50%, -135%);
+      padding: 0.15rem 0.55rem;
+      border-radius: 999px;
+      background: #e0261c;
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 700;
+      line-height: 1.5;
+      white-space: nowrap;
+      pointer-events: none;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+    }
+
+    .palm-figure figcaption.is-on {
+      color: var(--ink);
+      font-weight: 650;
+    }
+
+    .line-card.can-pick { cursor: pointer; }
+
+    .line-card.is-picked {
+      background: #fdf3ee;
+      border-top-color: #e0261c;
+    }
+
+    .line-card.is-picked h3 { color: #c21f16; }
+
+    .pick-btn {
+      margin: 0.55rem 0 0;
+      padding: 0.45rem 0.9rem;
+      border: 1px solid #d9b9a8;
+      border-radius: 999px;
+      background: #fff;
+      color: var(--shu-deep);
+      font: inherit;
+      font-size: 0.98rem;
+      font-weight: 650;
+      cursor: pointer;
+    }
+
+    .line-card.is-picked .pick-btn {
+      background: #e0261c;
+      border-color: #e0261c;
+      color: #fff;
+    }
+
+    @media screen {
+      .palm-figure {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        padding: 0.45rem 0 0.3rem;
+        background: var(--card);
+        border-bottom: 1px solid var(--line);
+      }
+      .palm-photo { max-height: 38vh; }
+      .palm-figure figcaption { margin-top: 0.25rem; font-size: 0.92rem; }
+    }
+
+    @media print {
+      .pick-btn { display: none !important; }
     }
 
     figcaption {
@@ -700,9 +800,21 @@
         visible: { type: "boolean", description: "この写真で、その線としてはっきり見えるか" },
         seen: { type: "string", description: "長さ・深さ・形・分岐・位置。見えないときはその旨だけ" },
         meaning: { type: "string", description: "伝統的な意味。見えない、または手のひらでないときは空文字" },
-        reading: { type: "string", description: "やさしい読み。見えない、または手のひらでないときは空文字" }
+        reading: { type: "string", description: "やさしい読み。見えない、または手のひらでないときは空文字" },
+        path: {
+          type: "array",
+          description: "写真の上で、その線が通っている位置。線の始まりから終わりまで、線に沿って順に4〜8点。x は写真の左端が0・右端が1000、y は写真の上端が0・下端が1000。見えない、または手のひらでないときは空配列",
+          items: {
+            type: "object",
+            properties: {
+              x: { type: "integer" },
+              y: { type: "integer" }
+            },
+            required: ["x", "y"]
+          }
+        }
       },
-      required: ["visible", "seen", "meaning", "reading"]
+      required: ["visible", "seen", "meaning", "reading", "path"]
     };
 
     var RESPONSE_SCHEMA = {
@@ -813,6 +925,7 @@
         "- 結婚や離別の時期、相手の人数、金額、失職などを断定しない。結婚線は縁の傾向であり、時期を当てる線として扱わない。",
         "- 脅すような言葉や、過度な賞賛は避ける。丁寧語で、60代の方にも読みやすい長さにする。",
         "- 対象の線は、生命線、知能線（頭脳線）、感情線、運命線、太陽線、結婚線、財運線。ほくろ、島、十字、スター、切れ目など、はっきり見える印だけを marks に入れる。無ければ空配列。",
+        "- 見える線には path を付ける。写真の上でその線が実際に通っている所を、始まりから終わりまで線に沿って順に4〜8点で示す。x は写真の左端が0・右端が1000、y は写真の上端が0・下端が1000（写真全体に対する位置で、手のひらに対する位置ではない）。曲がっている線は、曲がりが分かるように点を置く。一般的な手相の図の位置ではなく、この写真で見えている線そのものをなぞる。見えない線の path は空配列にする。",
         "- 手の形は、写真で分かる範囲（方形・長方形・円形、指の印象など）だけを handShape に書く。",
         "- 呼び名があるときは、summary か advice で自然に一度だけ使う。",
         "- disclaimer は次の一文そのものにする: " + DISCLAIMER
@@ -912,13 +1025,32 @@
       return String(value).trim();
     }
 
+    // 線の位置（0〜1000）。数字でない点は捨て、2点に満たなければ「位置なし」にする。
+    function asPath(value) {
+      if (!Array.isArray(value)) return [];
+      var points = [];
+      value.slice(0, 12).forEach(function (p) {
+        if (!p) return;
+        var x = Number(Array.isArray(p) ? p[0] : p.x);
+        var y = Number(Array.isArray(p) ? p[1] : p.y);
+        if (!isFinite(x) || !isFinite(y)) return;
+        points.push({
+          x: Math.max(0, Math.min(1000, Math.round(x))),
+          y: Math.max(0, Math.min(1000, Math.round(y)))
+        });
+      });
+      return points.length >= 2 ? points : [];
+    }
+
     function asLine(value) {
       var line = value || {};
+      var visible = line.visible === true || line.visible === "true";
       return {
-        visible: line.visible === true || line.visible === "true",
+        visible: visible,
         seen: asText(line.seen),
         meaning: asText(line.meaning),
-        reading: asText(line.reading)
+        reading: asText(line.reading),
+        path: visible ? asPath(line.path) : []
       };
     }
 
@@ -1143,7 +1275,7 @@
 
     function samplePalmDataUrl() {
       var svg = [
-        "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 860'>",
+        "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 860' width='640' height='860'>",
         "<rect width='640' height='860' fill='#f4eadc'/>",
         "<g fill='#f4cbb8' stroke='#6b4a3a' stroke-width='8' stroke-linejoin='round'>",
         "<rect x='222' y='78' width='70' height='250' rx='34'/>",
@@ -1177,31 +1309,36 @@
           visible: true,
           seen: "親指の付け根を大きく回り、手首の方へゆるやかに続く、深めの一本です。途中で大きく切れてはいません。",
           meaning: "生命線は、体力の波や、生活のリズムの傾向として読まれます。長く深い線は、粘り強く回復する力のたとえです。",
-          reading: "急がず、自分のペースを守るほど力が続くタイプです。休みを後回しにしないことが、この線の読みとよく合います。"
+          reading: "急がず、自分のペースを守るほど力が続くタイプです。休みを後回しにしないことが、この線の読みとよく合います。",
+          path: [{ x: 391, y: 547 }, { x: 430, y: 600 }, { x: 468, y: 668 }, { x: 503, y: 740 }, { x: 541, y: 814 }]
         },
         headLine: {
           visible: true,
           seen: "人差し指と親指のあいだから始まり、手のひらの中ほどをほぼまっすぐに、少しだけ下がって伸びています。",
           meaning: "知能線（頭脳線）は、考え方や判断のくせを見る線とされます。まっすぐめの線は、現実を一つずつ確かめる考え方、が伝統的な読みです。",
-          reading: "思いつきで飛びつくより、筋道を見てから決める方です。わからないことを、わからないままにしておける落ち着きがあります。"
+          reading: "思いつきで飛びつくより、筋道を見てから決める方です。わからないことを、わからないままにしておける落ち着きがあります。",
+          path: [{ x: 419, y: 581 }, { x: 520, y: 602 }, { x: 630, y: 605 }, { x: 735, y: 585 }, { x: 828, y: 549 }]
         },
         heartLine: {
           visible: true,
           seen: "小指の下から始まり、人差し指の方へ弓なりに伸びています。枝は少なめです。",
           meaning: "感情線は、気持ちの置き方や人との距離のとり方として読まれます。弓なりの線は、気持ちを表に出しつつ、相手を思いやる形とされます。",
-          reading: "人を大切にされます。ただ、自分の気持ちを後回しにしすぎないほうが、縁が長続きしやすい読みです。"
+          reading: "人を大切にされます。ただ、自分の気持ちを後回しにしすぎないほうが、縁が長続きしやすい読みです。",
+          path: [{ x: 428, y: 500 }, { x: 530, y: 470 }, { x: 640, y: 460 }, { x: 735, y: 472 }, { x: 813, y: 509 }]
         },
         fateLine: {
           visible: true,
           seen: "手首の上方から中指の方へ、細く、ところどころ薄く伸びています。",
           meaning: "運命線は、仕事や社会との関わりの傾向とされます。薄い線は、一つの肩書きに縛られない歩みとして読まれることがあります。",
-          reading: "道は、誰かに決められるより、暮らしの中で少しずつ形になっていくタイプです。遅くても、ご自身で選んだ歩みは強い、という読みです。"
+          reading: "道は、誰かに決められるより、暮らしの中で少しずつ形になっていくタイプです。遅くても、ご自身で選んだ歩みは強い、という読みです。",
+          path: [{ x: 613, y: 544 }, { x: 622, y: 620 }, { x: 633, y: 715 }, { x: 647, y: 814 }]
         },
         sunLine: {
           visible: true,
           seen: "薬指の下に、短めの薄い線が一本見えます。",
           meaning: "太陽線は、喜びや、人から認められたときの充実と関係づけられます。",
-          reading: "大きな舞台より、身近な人に喜ばれることに陽が当たるタイプです。趣味や世話を、小さく続けてみてください。"
+          reading: "大きな舞台より、身近な人に喜ばれることに陽が当たるタイプです。趣味や世話を、小さく続けてみてください。",
+          path: [{ x: 672, y: 291 }, { x: 695, y: 330 }, { x: 669, y: 372 }]
         },
         marriageLine: {
           visible: true,
@@ -1318,6 +1455,80 @@
       return node;
     }
 
+    // ===== 写真に線を重ねる（2026-11-27 みこ追加） =====
+    var SVG_NS = "http://www.w3.org/2000/svg";
+    var palm = { halo: null, mark: null, tag: null, caption: null, baseCaption: "", picked: null };
+
+    function buildPalmFigure(view, hasPath) {
+      var figure = el("figure", "palm-figure");
+      var stage = el("div", "palm-stage");
+      var img = el("img", "palm-photo");
+      img.src = view.photoUrl;
+      img.alt = view.sample ? "見本用の手のひらのイラスト" : "鑑定した手のひらの写真";
+      stage.appendChild(img);
+      var svg = document.createElementNS(SVG_NS, "svg");
+      svg.setAttribute("class", "palm-overlay");
+      svg.setAttribute("viewBox", "0 0 1000 1000");
+      svg.setAttribute("preserveAspectRatio", "none");
+      svg.setAttribute("aria-hidden", "true");
+      var halo = document.createElementNS(SVG_NS, "polyline");
+      halo.setAttribute("class", "halo");
+      var mark = document.createElementNS(SVG_NS, "polyline");
+      mark.setAttribute("class", "mark");
+      svg.appendChild(halo);
+      svg.appendChild(mark);
+      stage.appendChild(svg);
+      var tag = el("div", "palm-tag");
+      tag.hidden = true;
+      stage.appendChild(tag);
+      figure.appendChild(stage);
+      var base = view.sample ? "イラスト（見本）" : "鑑定に使った写真";
+      if (hasPath) base += "　線の説明を押すと、その線が出ます";
+      var caption = el("figcaption", "", base);
+      figure.appendChild(caption);
+      palm.halo = halo;
+      palm.mark = mark;
+      palm.tag = tag;
+      palm.caption = caption;
+      palm.baseCaption = base;
+      palm.picked = null;
+      return figure;
+    }
+
+    function clearPalmLine() {
+      if (palm.picked) {
+        palm.picked.card.classList.remove("is-picked");
+        palm.picked.button.textContent = "写真でこの線を見る";
+      }
+      palm.picked = null;
+      if (!palm.mark) return;
+      palm.halo.setAttribute("points", "");
+      palm.mark.setAttribute("points", "");
+      palm.tag.hidden = true;
+      palm.caption.textContent = palm.baseCaption;
+      palm.caption.classList.remove("is-on");
+    }
+
+    function pickPalmLine(card, button, title, line) {
+      var same = palm.picked && palm.picked.card === card;
+      clearPalmLine();
+      if (same || !palm.mark) return;
+      var points = line.path.map(function (p) { return p.x + "," + p.y; }).join(" ");
+      palm.halo.setAttribute("points", points);
+      palm.mark.setAttribute("points", points);
+      // 名札は線の始まりに置く。写真の外へはみ出さないよう、端では内側へ寄せる。
+      var first = line.path[0];
+      palm.tag.textContent = title.replace(/（.*）/, "");
+      palm.tag.style.left = Math.max(14, Math.min(86, first.x / 10)) + "%";
+      palm.tag.style.top = Math.max(9, first.y / 10) + "%";
+      palm.tag.hidden = false;
+      palm.caption.textContent = "赤い線が" + title.replace(/（.*）/, "") + "です（おおよその位置）";
+      palm.caption.classList.add("is-on");
+      card.classList.add("is-picked");
+      button.textContent = "写真の線を消す";
+      palm.picked = { card: card, button: button };
+    }
+
     function renderLine(parent, title, about, line) {
       var card = el("section", "line-card");
       card.appendChild(el("h3", "", title));
@@ -1336,6 +1547,14 @@
       if (line.reading) {
         card.appendChild(el("p", "label", "読み"));
         addParagraphs(card, line.reading);
+      }
+      if (line.path && line.path.length >= 2) {
+        var pick = el("button", "pick-btn", "写真でこの線を見る");
+        pick.type = "button";
+        card.appendChild(pick);
+        card.classList.add("can-pick");
+        // 説明のどこを押しても、写真にその線が出る。もう一度押すと消える。
+        card.addEventListener("click", function () { pickPalmLine(card, pick, title, line); });
       }
       parent.appendChild(card);
     }
@@ -1357,13 +1576,11 @@
       head.appendChild(el("p", "who", whoBits.join("　")));
       sheet.appendChild(head);
 
-      var figure = el("figure");
-      var img = el("img", "palm-photo");
-      img.src = view.photoUrl;
-      img.alt = view.sample ? "見本用の手のひらのイラスト" : "鑑定した手のひらの写真";
-      figure.appendChild(img);
-      figure.appendChild(el("figcaption", "", view.sample ? "イラスト（見本）" : "鑑定に使った写真"));
-      sheet.appendChild(figure);
+      var hasPath = !!view.reading.isPalm && LINE_FIELDS.some(function (field) {
+        var one = view.reading[field[0]];
+        return one && one.visible && one.path && one.path.length >= 2;
+      });
+      sheet.appendChild(buildPalmFigure(view, hasPath));
 
       if (view.sample) {
         sheet.appendChild(el("p", "sample-flag", "これは見本です。イラストをもとにした、読み方の例です。ご自身の手相ではありません。"));
