@@ -149,6 +149,7 @@
 
     input[type="text"],
     input[type="password"],
+    input[type="email"],
     input[type="url"] {
       display: block;
       width: 100%;
@@ -677,6 +678,9 @@
           <label class="field">年齢
             <input type="text" id="ageInput" name="age" inputmode="numeric" maxlength="3" autocomplete="off" placeholder="例）62">
           </label>
+          <label class="field">メールアドレス（鑑定書をメールで送る時だけ使います）
+            <input type="email" id="emailInput" name="email" maxlength="120" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="空欄でも大丈夫です">
+          </label>
           <fieldset>
             <legend>性別</legend>
             <div class="choices">
@@ -763,8 +767,16 @@
         <article class="sheet" id="resultSheet"></article>
       </div>
       <div class="stack actions no-print">
-        <button type="button" class="btn btn-primary" id="printBtn">鑑定書を保存・印刷</button>
-        <p class="hint">開いた画面で「PDFに保存」または「プリント」を選ぶと、手元に残せます。</p>
+        <button type="button" class="btn btn-primary" id="shareBtn">鑑定書を画像で保存・共有</button>
+        <p class="hint">鑑定書を1枚の画像にします。開いた一覧で「画像を保存」「メール」「LINE」などを選べます。</p>
+        <div class="message" id="shareStatus" hidden></div>
+        <label class="field">送り先のメールアドレス
+          <input type="email" id="mailTo" maxlength="120" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="例）name@example.com">
+        </label>
+        <button type="button" class="btn btn-secondary" id="mailBtn">鑑定書をメールで送る（文章）</button>
+        <p class="hint">メールのアプリが開き、宛先と鑑定の文章が入ります。送信はご自身で押してください。写真は付きません。写真も送りたい時は、上の「画像で保存・共有」からメールを選んでください。</p>
+        <div class="message" id="mailStatus" hidden></div>
+        <button type="button" class="btn btn-secondary" id="printBtn">印刷する（パソコン向け）</button>
         <button type="button" class="btn btn-secondary" id="restartBtn">はじめから</button>
       </div>
     </main>
@@ -1433,6 +1445,7 @@
       if (age && (Number(age) < 1 || Number(age) > 120)) age = "";
       return {
         name: clean($("nameInput").value, 40),
+        email: clean($("emailInput").value, 120),
         age: age,
         gender: selectedValue("gender"),
         hand: selectedValue("hand"),
@@ -1453,6 +1466,442 @@
       if (className) node.className = className;
       if (text != null) node.textContent = text;
       return node;
+    }
+
+    // ===== 線の位置だけを調べる（2026-11-28 みこ追加） =====
+    // 鑑定の文と一緒に答えさせると、写真をよく見ずに「図ならこの辺」と置いてしまう。
+    // 位置だけを、よく考える設定で、別のお願いとして同時に送る。失敗したら鑑定のほうの位置を使う。
+    var POSITION_SCHEMA = (function () {
+      var points = {
+        type: "array",
+        items: {
+          type: "object",
+          properties: { y: { type: "integer" }, x: { type: "integer" } },
+          required: ["y", "x"]
+        }
+      };
+      var props = {
+        palmBox: {
+          type: "object",
+          description: "指を除いた手のひらの範囲",
+          properties: {
+            ymin: { type: "integer" }, xmin: { type: "integer" },
+            ymax: { type: "integer" }, xmax: { type: "integer" }
+          },
+          required: ["ymin", "xmin", "ymax", "xmax"]
+        }
+      };
+      var required = ["palmBox"];
+      LINE_FIELDS.forEach(function (field) {
+        props[field[0]] = points;
+        required.push(field[0]);
+      });
+      return { type: "object", properties: props, required: required };
+    })();
+
+    function positionThinkingFor(model) {
+      if (/^gemini-2\.5/.test(model)) return { thinkingBudget: 2048 };
+      if (/^gemini-[34]/.test(model)) return { thinkingLevel: "medium" };
+      return null;
+    }
+
+    function buildPositionPrompt(profile) {
+      return [
+        "添付の写真は、手のひら（" + (profile.hand || "手") + "）です。手相の線が、この写真のどこを通っているかだけを調べて、指定のJSONで返してください。文章の説明は要りません。",
+        "",
+        "【座標】写真全体に対する位置。y は上端が0・下端が1000、x は左端が0・右端が1000。",
+        "",
+        "【手順】",
+        "1. まず palmBox に、指を除いた手のひらの範囲（指の付け根から手首まで）を入れる。",
+        "2. 次に、それぞれの線について、写真に実際に写っている皺（しわ）そのものを、始まりから終わりまで順になぞり、6〜12点を置く。曲がっている所には点を多めに置き、曲がりが分かるようにする。",
+        "",
+        "【大事なこと】",
+        "- 手相の教科書の図の位置に線を置かない。必ず、この写真で見えている皺の上に点を置く。点を置く前に、その場所に本当に皺が写っているかを確かめる。",
+        "- まっすぐな線で済ませない。皺の曲がりに合わせる。",
+        "- はっきり見えない線は、空配列にする。推測で置かない。",
+        "- 指の付け根の横皺や、指の関節の皺は、手相の線ではない。",
+        "",
+        "【線の見つけ方】",
+        "- lifeLine（生命線）: 親指と人差し指のあいだの縁から始まり、親指の付け根のふくらみを大きく囲むように弧を描いて、手首の方へ下る皺。",
+        "- headLine（知能線）: 生命線の始まりの近くから出て、手のひらの中ほどを小指側へ横切る皺。",
+        "- heartLine（感情線）: 小指側の手の縁から始まり、人差し指や中指の付け根の方へ伸びる、いちばん上の大きな横の皺。指の付け根の皺よりは下（手首寄り）にある。",
+        "- fateLine（運命線）: 手首の側から中指の付け根へ向かって上る、縦の皺。",
+        "- sunLine（太陽線）: 薬指の付け根の下にある、縦の皺。",
+        "- marriageLine（結婚線）: 小指の付け根と感情線のあいだ、小指側の手の縁にある短い横の皺。",
+        "- moneyLine（財運線）: 小指の付け根の下にある、縦の皺。"
+      ].join("\n");
+    }
+
+    function normalizePositions(raw) {
+      if (!raw || typeof raw !== "object") return null;
+      var box = raw.palmBox || {};
+      var nums = ["ymin", "xmin", "ymax", "xmax"].map(function (k) { return Number(box[k]); });
+      var valid = nums.every(isFinite) && nums[2] - nums[0] > 100 && nums[3] - nums[1] > 100;
+      var out = { palmBox: valid ? { ymin: nums[0], xmin: nums[1], ymax: nums[2], xmax: nums[3] } : null, lines: {} };
+      LINE_FIELDS.forEach(function (field) {
+        out.lines[field[0]] = asPath(raw[field[0]]);
+      });
+      return out;
+    }
+
+    // 鑑定で「見える」とした線だけ、調べ直した位置に置き換える。手のひらの外に出た線は使わない。
+    function mergePositions(reading, positions) {
+      if (!positions || !positions.lines) return reading;
+      var box = positions.palmBox;
+      LINE_FIELDS.forEach(function (field) {
+        var line = reading[field[0]];
+        var path = positions.lines[field[0]];
+        if (!line || !line.visible || !path || path.length < 2) return;
+        if (box) {
+          var padY = (box.ymax - box.ymin) * 0.1;
+          var padX = (box.xmax - box.xmin) * 0.1;
+          var outside = path.filter(function (p) {
+            return p.y < box.ymin - padY || p.y > box.ymax + padY || p.x < box.xmin - padX || p.x > box.xmax + padX;
+          }).length;
+          if (outside * 2 > path.length) return;
+        }
+        line.path = path;
+      });
+      return reading;
+    }
+
+    function waitMs(ms) {
+      return new Promise(function (resolve) { setTimeout(function () { resolve(null); }, ms); });
+    }
+
+    async function requestPositions(photo, profile) {
+      var model = currentModel();
+      // よく考える設定が通らないモデル（400）の時だけ、鑑定と同じ設定でもう一度送る。
+      var tries = [positionThinkingFor(model), thinkingConfigFor(model)];
+      for (var i = 0; i < tries.length; i++) {
+        var generationConfig = {
+          temperature: 0.2,
+          maxOutputTokens: 8192,
+          responseFormat: { text: { mimeType: "APPLICATION_JSON", schema: POSITION_SCHEMA } }
+        };
+        if (tries[i]) generationConfig.thinkingConfig = tries[i];
+        var controller = new AbortController();
+        var timer = setTimeout(controller.abort.bind(controller), 75000);
+        try {
+          var response = await fetch(API_ORIGIN + encodeURIComponent(model) + ":generateContent", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-goog-api-key": readStoredKey() },
+            body: JSON.stringify({
+              contents: [{
+                parts: [
+                  { text: buildPositionPrompt(profile) },
+                  { inline_data: { mime_type: photo.mimeType || "image/jpeg", data: photo.base64 } }
+                ]
+              }],
+              generationConfig: generationConfig
+            }),
+            signal: controller.signal
+          });
+          if (response.status === 400 && i === 0) continue;
+          if (!response.ok) return null;
+          return normalizePositions(parseModelJson(extractModelText(await response.json())));
+        } finally {
+          clearTimeout(timer);
+        }
+      }
+      return null;
+    }
+
+    // ===== 鑑定書を画像にする・メールで送る（2026-11-28 みこ追加） =====
+    // iPhone のホーム画面から開いた時は「印刷」の画面が出ないので、鑑定書を1枚の画像にして共有の一覧へ渡す。
+    var LINE_COLORS = ["#e0261c", "#1f6fd1", "#16864a", "#b0531a", "#8a3fc0", "#d1277f", "#0f8a8a"];
+
+    function whoText(view) {
+      var bits = [];
+      bits.push(view.sample ? "見本" : (view.profile.name || "名前記入なし"));
+      if (!view.sample && view.profile.age) bits.push(view.profile.age + "歳");
+      if (!view.sample && view.profile.gender && view.profile.gender !== "答えない") bits.push(view.profile.gender);
+      bits.push(view.profile.hand);
+      bits.push("利き手は" + view.profile.dominant);
+      return bits.join("　");
+    }
+
+    // 鑑定書の中身を、見出しと文の並びにする（画像とメールの両方で使う）。
+    function readingBlocks(view) {
+      var r = view.reading;
+      var out = [];
+      function add(kind, text) {
+        String(text || "").split(/\n+/).forEach(function (part) {
+          var trimmed = part.trim();
+          if (trimmed) out.push({ kind: kind, text: trimmed });
+        });
+      }
+      if (view.sample) add("note", "これは見本です。イラストをもとにした、読み方の例です。");
+      if (!r.isPalm) {
+        add("h2", "もう一度、撮ってみてください");
+        add("p", r.retakeMessage || "手のひらとしてはっきり見えませんでした。明るい場所で、もう一度お願いします。");
+        add("note", DISCLAIMER);
+        return out;
+      }
+      add("h2", "総評");
+      add("p", r.summary);
+      add("h2", "手の形");
+      add("label", "見えたこと");
+      add("p", r.handShape.seen);
+      if (r.handShape.meaning) { add("label", "伝統的な意味"); add("p", r.handShape.meaning); }
+      if (r.handShape.reading) { add("label", "読み"); add("p", r.handShape.reading); }
+      add("h2", "線");
+      LINE_FIELDS.forEach(function (field) {
+        var line = r[field[0]];
+        add("h3", field[1]);
+        if (!line || !line.visible) {
+          add("p", line && line.seen ? line.seen : "この写真では、はっきり見えませんでした。");
+          return;
+        }
+        add("label", "見えたこと");
+        add("p", line.seen || "写真から分かる範囲で見ています。");
+        if (line.meaning) { add("label", "伝統的な意味"); add("p", line.meaning); }
+        if (line.reading) { add("label", "読み"); add("p", line.reading); }
+      });
+      if (r.marks.length) {
+        add("h2", "気になった印");
+        r.marks.forEach(function (mark) {
+          add("h3", mark.name || "印");
+          add("p", mark.seen);
+          if (mark.reading) { add("label", "読み"); add("p", mark.reading); }
+        });
+      }
+      add("h2", "性格");
+      add("p", r.personality);
+      add("h2", "仕事・お金");
+      add("p", r.workMoney);
+      add("h2", "人間関係・恋愛");
+      add("p", r.relationships);
+      add("h2", "健康の傾向");
+      add("note", "病気の診断ではありません。気になるときは、医療機関にご相談ください。");
+      add("p", r.healthTendency);
+      add("h2", "これからへの言葉");
+      add("p", r.advice);
+      add("note", DISCLAIMER);
+      return out;
+    }
+
+    function buildSheetText(view) {
+      var lines = ["手相 鑑定書", japaneseDate(view.date || new Date()), whoText(view)];
+      readingBlocks(view).forEach(function (block) {
+        if (block.kind === "h2") lines.push("", "■ " + block.text);
+        else if (block.kind === "h3") lines.push("", "◆ " + block.text);
+        else if (block.kind === "label") lines.push("【" + block.text + "】");
+        else if (block.kind === "note") lines.push("※ " + block.text);
+        else lines.push(block.text);
+      });
+      return lines.join("\n");
+    }
+
+    function wrapCanvasText(ctx, text, maxWidth) {
+      var lines = [];
+      var line = "";
+      var noStart = "、。，．）」』】！？ー…々";
+      Array.from(String(text)).forEach(function (ch) {
+        var test = line + ch;
+        if (line && ctx.measureText(test).width > maxWidth && noStart.indexOf(ch) === -1) {
+          lines.push(line);
+          line = ch;
+        } else {
+          line = test;
+        }
+      });
+      if (line) lines.push(line);
+      return lines;
+    }
+
+    async function buildSheetImage(view) {
+      var img = await loadImage(view.photoUrl);
+      var W = 1080, M = 72, CW = W - M * 2;
+      var SERIF = "\"Hiragino Mincho ProN\", \"Yu Mincho\", YuMincho, \"Noto Serif JP\", serif";
+      var SANS = "\"Hiragino Sans\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", YuGothic, \"Noto Sans JP\", sans-serif";
+      var STYLES = {
+        kicker: { font: "700 30px " + SANS, color: "#6f2d25", lh: 44, before: 0, after: 0, center: true },
+        h1: { font: "500 68px " + SERIF, color: "#2c241c", lh: 92, before: 0, after: 4, center: true },
+        date: { font: "400 30px " + SANS, color: "#5e5146", lh: 46, before: 0, after: 0, center: true },
+        who: { font: "400 32px " + SANS, color: "#2c241c", lh: 50, before: 12, after: 0, center: true },
+        h2: { font: "500 46px " + SERIF, color: "#2c241c", lh: 64, before: 44, after: 6, rule: true },
+        h3: { font: "500 40px " + SERIF, color: "#2c241c", lh: 56, before: 30, after: 0 },
+        label: { font: "700 27px " + SANS, color: "#6f2d25", lh: 42, before: 12, after: 0 },
+        p: { font: "400 31px " + SANS, color: "#2c241c", lh: 54, before: 0, after: 8 },
+        note: { font: "400 27px " + SANS, color: "#7a6a5c", lh: 44, before: 6, after: 8 }
+      };
+      var probe = document.createElement("canvas").getContext("2d");
+      var ops = [];
+      var y = 96;
+      function put(kind, text) {
+        var style = STYLES[kind];
+        probe.font = style.font;
+        y += style.before;
+        wrapCanvasText(probe, text, CW).forEach(function (line) {
+          y += style.lh;
+          ops.push({ font: style.font, color: style.color, text: line, x: style.center ? W / 2 : M, y: y - style.lh * 0.3, center: !!style.center });
+        });
+        y += style.after;
+        if (style.rule) {
+          ops.push({ rule: true, y: y });
+          y += 10;
+        }
+      }
+      put("kicker", "手相");
+      put("h1", "鑑定書");
+      put("date", japaneseDate(view.date || new Date()));
+      put("who", whoText(view));
+      y += 34;
+      var iw = img.naturalWidth || img.width || 640;
+      var ih = img.naturalHeight || img.height || 860;
+      var scale = Math.min(CW / iw, 1150 / ih);
+      var pw = Math.round(iw * scale), ph = Math.round(ih * scale);
+      var px = Math.round((W - pw) / 2), py = y;
+      y += ph + 20;
+      readingBlocks(view).forEach(function (block) { put(block.kind, block.text); });
+      y += 84;
+      var H = y;
+      // 端末が扱える大きさを超えないよう、長すぎる時は全体を縮める。
+      var shrink = Math.min(1, 14000 / H);
+      var canvas = document.createElement("canvas");
+      canvas.width = Math.round(W * shrink);
+      canvas.height = Math.round(H * shrink);
+      var ctx = canvas.getContext("2d");
+      ctx.scale(shrink, shrink);
+      ctx.fillStyle = "#fffdf8";
+      ctx.fillRect(0, 0, W, H);
+      ctx.strokeStyle = "#c4a882";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(22, 22, W - 44, H - 44);
+      ctx.strokeRect(32, 32, W - 64, H - 64);
+      ctx.textBaseline = "alphabetic";
+      ops.forEach(function (op) {
+        if (op.rule) {
+          ctx.strokeStyle = "#e0d0bc";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(M, op.y);
+          ctx.lineTo(W - M, op.y);
+          ctx.stroke();
+          return;
+        }
+        ctx.font = op.font;
+        ctx.fillStyle = op.color;
+        ctx.textAlign = op.center ? "center" : "left";
+        ctx.fillText(op.text, op.x, op.y);
+      });
+      ctx.drawImage(img, px, py, pw, ph);
+      // 写真に、見えた線を色分けして重ねる。
+      if (view.reading.isPalm) {
+        var tags = [];
+        LINE_FIELDS.forEach(function (field, index) {
+          var line = view.reading[field[0]];
+          if (!line || !line.visible || !line.path || line.path.length < 2) return;
+          var color = LINE_COLORS[index % LINE_COLORS.length];
+          [["#ffffff", 13], [color, 7]].forEach(function (pass) {
+            ctx.strokeStyle = pass[0];
+            ctx.lineWidth = pass[1];
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            ctx.beginPath();
+            line.path.forEach(function (p, i) {
+              var cx = px + p.x / 1000 * pw, cy = py + p.y / 1000 * ph;
+              if (i === 0) ctx.moveTo(cx, cy); else ctx.lineTo(cx, cy);
+            });
+            ctx.stroke();
+          });
+          tags.push({ text: field[1].replace(/（.*）/, ""), color: color, x: px + line.path[0].x / 1000 * pw, y: py + line.path[0].y / 1000 * ph });
+        });
+        ctx.font = "700 26px " + SANS;
+        ctx.textAlign = "center";
+        tags.forEach(function (tag) {
+          var tw = ctx.measureText(tag.text).width + 28;
+          var tx = Math.max(px + tw / 2 + 4, Math.min(px + pw - tw / 2 - 4, tag.x));
+          var ty = Math.max(py + 46, tag.y - 16);
+          ctx.fillStyle = tag.color;
+          ctx.beginPath();
+          ctx.moveTo(tx - tw / 2 + 19, ty - 38);
+          ctx.arcTo(tx + tw / 2, ty - 38, tx + tw / 2, ty, 19);
+          ctx.arcTo(tx + tw / 2, ty, tx - tw / 2, ty, 19);
+          ctx.arcTo(tx - tw / 2, ty, tx - tw / 2, ty - 38, 19);
+          ctx.arcTo(tx - tw / 2, ty - 38, tx + tw / 2, ty - 38, 19);
+          ctx.closePath();
+          ctx.fill();
+          ctx.fillStyle = "#ffffff";
+          ctx.fillText(tag.text, tx, ty - 10);
+        });
+      }
+      var blob = await canvasToBlob(canvas, 0.9);
+      if (!blob) throw new Error("image");
+      return blob;
+    }
+
+    function sheetFileName(view) {
+      var d = view.date || new Date();
+      function two(n) { return (n < 10 ? "0" : "") + n; }
+      var who = view.sample ? "見本" : ((view.profile && view.profile.name) || "");
+      who = who.replace(/[\\\/:*?"<>|\s]/g, "");
+      return "手相鑑定書" + (who ? "_" + who : "") + "_" + d.getFullYear() + two(d.getMonth() + 1) + two(d.getDate()) + ".jpg";
+    }
+
+    // 押してすぐ共有の一覧を出せるよう、鑑定書を開いた時に画像を先に作っておく。
+    function ensureSheetImage() {
+      if (!state.sheetImage && state.view) {
+        state.sheetImage = buildSheetImage(state.view);
+        state.sheetImage.catch(function () { state.sheetImage = null; });
+      }
+      return state.sheetImage;
+    }
+
+    async function shareSheetImage() {
+      if (!state.view) return;
+      var view = state.view;
+      setMessage("shareStatus", "画像を作っています。少々お待ちください。", true);
+      var blob;
+      try {
+        blob = await ensureSheetImage();
+      } catch (e) {
+        setMessage("shareStatus", "画像を作れませんでした。もう一度押してください。");
+        return;
+      }
+      var name = sheetFileName(view);
+      var file = null;
+      try { file = new File([blob], name, { type: "image/jpeg" }); }
+      catch (e) { file = null; }
+      if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file] });
+          setMessage("shareStatus", "");
+          return;
+        } catch (e) {
+          if (e && e.name === "AbortError") { setMessage("shareStatus", ""); return; }
+          if (e && e.name === "NotAllowedError") {
+            setMessage("shareStatus", "画像の用意ができました。もう一度押してください。", true);
+            return;
+          }
+        }
+      }
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+      setMessage("shareStatus", "画像を保存しました。ダウンロードの場所をご覧ください。", true);
+    }
+
+    function mailSheet() {
+      if (!state.view) return;
+      var view = state.view;
+      var addr = clean($("mailTo").value, 120);
+      if (addr && !/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(addr)) {
+        setMessage("mailStatus", "メールアドレスの形を確かめてください。空欄のままでも、メールの画面で宛先を入れられます。");
+        return;
+      }
+      setMessage("mailStatus", "");
+      var name = view.sample ? "" : ((view.profile && view.profile.name) || "");
+      var subject = "手相の鑑定書" + (name ? "（" + name + "さん）" : "");
+      var body = buildSheetText(view).replace(/\n/g, "\r\n");
+      window.location.href = "mailto:" + encodeURIComponent(addr).replace(/%40/g, "@") +
+        "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
     }
 
     // ===== 写真に線を重ねる（2026-11-27 みこ追加） =====
@@ -1560,6 +2009,11 @@
     }
 
     function renderReading(view) {
+      state.view = view;
+      state.sheetImage = null;
+      $("mailTo").value = (view.profile && view.profile.email) || "";
+      setMessage("shareStatus", "");
+      setMessage("mailStatus", "");
       var sheet = $("resultSheet");
       sheet.textContent = "";
       var head = el("header", "sheet-head");
@@ -1598,6 +2052,7 @@
         sheet.appendChild(retake);
         sheet.appendChild(el("p", "endnote", DISCLAIMER));
         show("result");
+        setTimeout(ensureSheetImage, 300);
         return;
       }
 
@@ -1667,6 +2122,7 @@
 
       sheet.appendChild(el("p", "endnote", DISCLAIMER));
       show("result");
+      setTimeout(ensureSheetImage, 300);
     }
 
     function startLoading() {
@@ -1897,7 +2353,11 @@
       }
       startLoading();
       try {
+        // 線の位置だけを調べるお願いを、鑑定と同時に送る。こちらが失敗しても鑑定書は出す。
+        var positionsPromise = requestPositions(state.photo, profile).catch(function () { return null; });
         var reading = await requestReading(state.photo, profile);
+        // 鑑定が先に届いた時、位置のほうは長くても30秒だけ待つ。
+        if (reading.isPalm) mergePositions(reading, await Promise.race([positionsPromise, waitMs(30000)]));
         var when = new Date();
         renderReading({
           reading: reading,
@@ -1984,6 +2444,8 @@
       setMessage("formError", "鑑定をやめました。写真はそのまま残してあります。");
     });
     $("printBtn").addEventListener("click", function () { window.print(); });
+    $("shareBtn").addEventListener("click", shareSheetImage);
+    $("mailBtn").addEventListener("click", mailSheet);
     $("restartBtn").addEventListener("click", function () {
       state.photo = null;
       $("photoPreview").hidden = true;
@@ -1992,6 +2454,8 @@
       $("photoMeta").textContent = "明るい場所で、手のひら全体を。指は少し開いてください。";
       setMessage("formError", "");
       setMessage("photoError", "");
+      // 次の人の鑑定書を、前の人のアドレスへ送ってしまわないように消す
+      $("emailInput").value = "";
       clearDraft();
       show("home");
     });
@@ -2025,7 +2489,7 @@
     }
     function saveDraft() {
       var p = readProfile();
-      var d = { photo: state.photo, name: p.name, age: $("ageInput").value, gender: p.gender, hand: p.hand, dominant: p.dominant };
+      var d = { photo: state.photo, name: p.name, email: p.email, age: $("ageInput").value, gender: p.gender, hand: p.hand, dominant: p.dominant };
       idb("draft", "readwrite", function (st) { return st.put(d, "cur"); }).catch(function () {});
     }
     function clearDraft() {
@@ -2049,6 +2513,7 @@
         // 入口から渡された名前などがあれば、そちらを優先する（空欄の所だけ戻す）
         if (d.name && !$("nameInput").value) $("nameInput").value = d.name;
         if (d.age && !$("ageInput").value) $("ageInput").value = d.age;
+        if (d.email && !$("emailInput").value) $("emailInput").value = d.email;
         if (!selectedValue("gender")) setRadio("gender", d.gender);
         if (!selectedValue("hand")) setRadio("hand", d.hand);
         if (!selectedValue("dominant")) setRadio("dominant", d.dominant);
@@ -2091,7 +2556,7 @@
         });
       }).catch(function () {});
     }
-    ["nameInput", "ageInput"].forEach(function (id) { $(id).addEventListener("input", saveDraft); });
+    ["nameInput", "ageInput", "emailInput"].forEach(function (id) { $(id).addEventListener("input", saveDraft); });
     document.querySelectorAll("#readForm input[type='radio']").forEach(function (r) { r.addEventListener("change", saveDraft); });
     // 入口から名前などが入るのを待ってから戻す
     setTimeout(function () { restoreDraft(); renderHistory(); }, 300);
@@ -2103,6 +2568,11 @@
       DEFAULT_MODEL: DEFAULT_MODEL,
       DISCLAIMER: DISCLAIMER,
       buildGeminiRequest: buildGeminiRequest,
+      buildSheetImage: buildSheetImage,
+      buildSheetText: buildSheetText,
+      normalizePositions: normalizePositions,
+      mergePositions: mergePositions,
+      buildPositionPrompt: buildPositionPrompt,
       extractModelText: extractModelText,
       parseModelJson: parseModelJson,
       normalizeReading: normalizeReading,
